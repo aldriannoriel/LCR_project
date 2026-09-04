@@ -9,10 +9,47 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Rider extends Model
 {
-    protected $fillable = ['user_id', 'hub_id', 'vehicle_type', 'plate_number', 'status', 'phone_number'];
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function hub(): BelongsTo { return $this->belongsTo(Hub::class); }
-    public function performance(): HasOne { return $this->hasOne(RiderPerformance::class); }
-    public function orders(): HasMany { return $this->hasMany(Order::class); }
-    public function manifests(): HasMany { return $this->hasMany(TransferManifest::class); }
+    protected $fillable = [
+        'user_id',
+        'hub_id',
+        'vehicle_type',
+        'plate_number',
+        'status',
+        'phone_number',
+        'license_number',
+        'license_doc_path',
+        'vehicle_or_cr_path',
+        'application_status',
+        'rejection_reason',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function hub(): BelongsTo
+    {
+        return $this->belongsTo(Hub::class);
+    }
+
+    public function performance(): HasOne
+    {
+        return $this->hasOne(RiderPerformance::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function manifests(): HasMany
+    {
+        return $this->hasMany(TransferManifest::class);
+    }
+
+    public function pickupRequests(): HasMany
+    {
+        return $this->hasMany(PickupRequest::class, 'assigned_rider_id');
+    }
 }

@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('auth', {
         isAuthenticated: (state) => !!state.token,
         userRoles: (state) => state.user?.roles?.map(r => r.name.toLowerCase().replaceAll(' ', '_')) || state.roles,
         hasRole: (state) => (roles) => (Array.isArray(roles) ? roles : [roles]).some((role) => state.user?.roles?.some((item) => item.name === role) || state.roles.includes(role)),
+        isRider: (state) => state.user?.rider !== null || state.roles.includes('rider'),
     },
     actions: {
         async login(credentials) {
@@ -22,6 +23,9 @@ export const useAuthStore = defineStore('auth', {
             localStorage.setItem('token', this.token);
             localStorage.setItem('user_roles', JSON.stringify(this.roles));
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+
+            // Return redirect path based on user type
+            return this.user?.rider ? '/courier' : '/dashboard';
         },
         async logout() {
             if (this.token) {

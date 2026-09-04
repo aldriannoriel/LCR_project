@@ -84,7 +84,10 @@ class DatabaseSeeder extends Seeder
         // 4. Admin User
         $admin = User::firstOrCreate(['email' => 'admin@logistics.local'], [
             'name' => 'System Administrator',
+            'first_name' => 'System',
+            'last_name' => 'Administrator',
             'password' => Hash::make('password123'),
+            'approval_status' => 'approved',
         ]);
         $admin->assignRole('Admin');
 
@@ -150,10 +153,43 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        foreach ([['Maya Santos', 'maya.rider@logistics.local', 'motorcycle', 'RDR-001', 'available'], ['Paolo Reyes', 'paolo.rider@logistics.local', 'van', 'RDR-002', 'on_delivery'], ['Lina Cruz', 'lina.rider@logistics.local', 'tricycle', 'RDR-003', 'off_duty']] as $index => $riderData) {
-            $user = User::firstOrCreate(['email' => $riderData[1]], ['name' => $riderData[0], 'password' => Hash::make('password123'), 'hub_id' => $hubs[$index % $hubs->count()]]);
+        foreach ([['Maya Santos', 'maya.rider@logistics.local', 'motorcycle', 'RDR-001', 'available', 'Maya', 'Santos'], ['Paolo Reyes', 'paolo.rider@logistics.local', 'van', 'RDR-002', 'on_delivery', 'Paolo', 'Reyes'], ['Lina Cruz', 'lina.rider@logistics.local', 'tricycle', 'RDR-003', 'off_duty', 'Lina', 'Cruz']] as $index => $riderData) {
+            $user = User::firstOrCreate(['email' => $riderData[1]], [
+                'name' => $riderData[0],
+                'first_name' => $riderData[5],
+                'last_name' => $riderData[6],
+                'password' => Hash::make('password123'),
+                'hub_id' => $hubs[$index % $hubs->count()],
+                'approval_status' => 'approved',
+            ]);
             $rider = Rider::updateOrCreate(['user_id' => $user->id], ['hub_id' => $user->hub_id, 'vehicle_type' => $riderData[2], 'plate_number' => $riderData[3], 'status' => $riderData[4], 'phone_number' => '0917-555-000'.($index + 1)]);
             RiderPerformance::updateOrCreate(['rider_id' => $rider->id], ['total_assigned' => 120 + ($index * 20), 'total_completed' => 110 + ($index * 15), 'total_failed' => $index, 'on_time_rate' => 91.5 + $index, 'rating' => 4.5 + ($index / 10)]);
         }
+
+        // 5. Demo accounts for unified login
+        $ncrHub = Hub::where('code', 'HUB-LUZ-NCR')->first();
+        $courier = User::firstOrCreate(['email' => 'courier@logistics.local'], [
+            'name' => 'Demo Courier',
+            'first_name' => 'Demo',
+            'last_name' => 'Courier',
+            'phone_number' => '0917-555-9999',
+            'password' => Hash::make('password123'),
+            'hub_id' => $ncrHub?->id,
+            'approval_status' => 'approved',
+        ]);
+        $courier->assignRole('Rider');
+        $courierRider = Rider::updateOrCreate(['user_id' => $courier->id], [
+            'hub_id' => $ncrHub?->id,
+            'vehicle_type' => 'motorcycle',
+            'plate_number' => 'DEMO-001',
+            'license_number' => 'D01-DEMO-999',
+            'status' => 'available',
+            'phone_number' => '0917-555-9999',
+        ]);
+        RiderPerformance::updateOrCreate(['rider_id' => $courierRider->id], [
+            'total_assigned' => 50, 'total_completed' => 47, 'total_failed' => 1,
+            'on_time_rate' => 95, 'rating' => 4.8,
+        ]);
+
     }
 }
