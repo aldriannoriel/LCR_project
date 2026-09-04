@@ -1,0 +1,18 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRiderStore } from '../../stores/rider';
+
+const props = defineProps({ rider: { type: Object, required: true } });
+const emit = defineEmits(['close']);
+const store = useRiderStore();
+const tab = ref('active');
+const detail = computed(() => store.selected || props.rider);
+const orders = computed(() => detail.value.orders || []);
+const statusClass = { available: 'bg-emerald-100 text-emerald-800', on_delivery: 'bg-blue-100 text-blue-800', off_duty: 'bg-slate-100 text-slate-700', suspended: 'bg-red-100 text-red-800' };
+const label = (value) => value?.replaceAll('_', ' ');
+onMounted(() => store.fetchDetails(props.rider.id));
+</script>
+
+<template>
+  <aside class="fixed inset-y-0 right-0 z-30 w-full max-w-xl overflow-y-auto bg-white shadow-2xl"><div class="border-b border-slate-200 px-6 py-5"><div class="flex justify-between"><div><p class="text-xs font-black uppercase tracking-widest text-teal-700">Rider profile</p><h2 class="mt-1 text-2xl font-black">{{ detail.user?.name }}</h2><span class="mt-2 inline-flex px-2.5 py-1 text-xs font-bold capitalize" :class="statusClass[detail.status]">{{ label(detail.status) }}</span></div><button class="text-2xl text-slate-400" aria-label="Close" @click="emit('close')">&times;</button></div><div class="mt-5 grid gap-2 text-sm text-slate-600"><div>{{ detail.phone_number || 'No phone number' }}</div><div>{{ detail.user?.email }}</div><div>{{ detail.vehicle_type }} · {{ detail.plate_number || 'No plate number' }}</div><div>{{ detail.hub?.name }}</div></div></div><div class="grid grid-cols-3 gap-3 p-6"><div class="bg-teal-50 p-4"><p class="text-xs font-bold uppercase text-teal-700">On-time</p><p class="mt-1 text-2xl font-black">{{ Number(detail.performance?.on_time_rate || 0).toFixed(1) }}%</p></div><div class="bg-slate-100 p-4"><p class="text-xs font-bold uppercase text-slate-500">Completed</p><p class="mt-1 text-2xl font-black">{{ detail.performance?.total_completed || 0 }}</p></div><div class="bg-amber-50 p-4"><p class="text-xs font-bold uppercase text-amber-700">Rating</p><p class="mt-1 text-2xl font-black">{{ Number(detail.performance?.rating || 0).toFixed(2) }}</p></div></div><div class="px-6"><div class="flex gap-5 border-b border-slate-200"><button class="border-b-2 px-1 py-3 text-sm font-bold" :class="tab === 'active' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400'" @click="tab = 'active'">Active deliveries</button><button class="border-b-2 px-1 py-3 text-sm font-bold" :class="tab === 'history' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400'" @click="tab = 'history'">History</button></div><div class="divide-y divide-slate-100"> <div v-for="order in orders" v-show="tab === 'active' ? order.status === 'out_for_delivery' : order.status !== 'out_for_delivery'" :key="order.id" class="py-4"><div class="flex justify-between"><span class="font-mono font-bold">{{ order.awb_number }}</span><span class="text-xs font-bold capitalize text-blue-700">{{ label(order.status) }}</span></div><p class="mt-1 text-sm text-slate-600">{{ order.recipient_name }}</p><p class="text-sm text-slate-500">{{ order.recipient_address }}</p><p class="mt-2 text-xs text-slate-400">Assigned {{ order.assigned_at ? new Date(order.assigned_at).toLocaleString() : '—' }}</p></div><p v-if="!orders.filter((order) => tab === 'active' ? order.status === 'out_for_delivery' : order.status !== 'out_for_delivery').length" class="py-8 text-sm text-slate-400">No deliveries in this view.</p></div></div></aside>
+</template>

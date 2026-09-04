@@ -1,0 +1,57 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import Login from '../views/Login.vue';
+import OrderList from '../views/orders/OrderList.vue';
+import SortingTerminal from '../views/sorting/SortingTerminal.vue';
+import ManifestManager from '../views/manifests/ManifestManager.vue';
+import RiderDirectory from '../views/fleet/RiderDirectory.vue';
+import HubGrid from '../views/hubs/HubGrid.vue';
+import HubInventoryAudit from '../views/hubs/HubInventoryAudit.vue';
+import TransferRequests from '../views/hubs/TransferRequests.vue';
+import ReturnIntakeQueue from '../views/returns/ReturnIntakeQueue.vue';
+import DashboardOverview from '../views/DashboardOverview.vue';
+import ReportBuilder from '../views/reports/ReportBuilder.vue';
+
+const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login,
+  },
+  {
+    path: '/',
+    redirect: '/login',
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: OrderList,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: DashboardOverview,
+    meta: { requiresAuth: true },
+  },
+  { path: '/sorting', name: 'Sorting', component: SortingTerminal, meta: { requiresAuth: true } },
+  { path: '/manifests', name: 'Manifests', component: ManifestManager, meta: { requiresAuth: true } },
+  { path: '/fleet', name: 'Fleet', component: RiderDirectory, meta: { requiresAuth: true } },
+  { path: '/hubs', name: 'Hubs', component: HubGrid, meta: { requiresAuth: true } },
+  { path: '/hubs/:id/inventory', name: 'HubInventory', component: HubInventoryAudit, meta: { requiresAuth: true } },
+  { path: '/transfers', name: 'Transfers', component: TransferRequests, meta: { requiresAuth: true } },
+  { path: '/returns', name: 'Returns', component: ReturnIntakeQueue, meta: { requiresAuth: true } },
+  { path: '/reports', name: 'Reports', component: ReportBuilder, meta: { requiresAuth: true, roles: ['super_admin', 'hub_manager', 'admin'] } },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth && !localStorage.getItem('token')) return '/login';
+  const roles = JSON.parse(localStorage.getItem('user_roles') || '[]');
+  if (to.meta.roles && !to.meta.roles.some((role) => roles.includes(role))) return '/dashboard';
+});
+
+export default router;

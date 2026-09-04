@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer -V)",
+      "Read(//c/Windows/System32/**)",
+      "Read(//c/Program Files/**)",
+      "Read(//c//**)",
+      "Bash(where.exe php *)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+<script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { echo } from '../../lib/echo';
+const activities = ref([]); let channel; let timer;
+const add = (type, title, detail, timestamp) => { activities.value = [{ type, title, detail, timestamp: timestamp || new Date().toISOString() }, ...activities.value].slice(0, 40); };
+onMounted(() => { try { channel = echo.channel('dashboard.activity').listen('.hub.capacity-alert', (event) => add('capacity', 'Capacity warning', `${event.hub_name} is at ${event.utilization_percentage}%`, event.timestamp)).listen('.order.major-delay', (event) => add('delay', 'Order delay', `${event.awb_number}: ${event.reason}`, event.timestamp)).listen('.transfer.dispatched', (event) => add('transfer', 'Transfer dispatched', `${event.reference_number}: ${event.from_hub} → ${event.to_hub}`, event.timestamp)); } catch (_) {} timer = setInterval(() => {}, 60000); });
+onBeforeUnmount(() => { if (channel) echo.leave('dashboard.activity'); clearInterval(timer); });
+</script>
+
+<template>
+  <section class="border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-widest text-teal-700">Operations stream</p><h2 class="mt-1 text-xl font-bold">Live activity</h2></div><span class="flex items-center gap-2 text-xs font-bold text-slate-400"><i class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> Realtime</span></div><div class="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1"><article v-for="(item, index) in activities" :key="index + item.timestamp" class="border-l-2 py-1 pl-3" :class="item.type === 'capacity' ? 'border-amber-400' : item.type === 'delay' ? 'border-red-400' : 'border-teal-400'"><div class="flex justify-between gap-3"><strong class="text-sm">{{ item.title }}</strong><time class="shrink-0 text-xs text-slate-400">{{ new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</time></div><p class="mt-1 text-sm text-slate-600">{{ item.detail }}</p></article><p v-if="!activities.length" class="py-10 text-center text-sm text-slate-400">Waiting for operational events. The dashboard remains available if realtime is offline.</p></div></section>
+</template>

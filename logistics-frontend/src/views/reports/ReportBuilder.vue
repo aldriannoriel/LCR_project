@@ -1,0 +1,16 @@
+<script setup>
+import { onMounted, reactive, ref, watch } from 'vue';
+import { axios } from '../../lib/echo';
+import AnalyticsOverview from '../../components/reports/AnalyticsOverview.vue';
+import ExportToolbar from '../../components/reports/ExportToolbar.vue';
+
+const filters = reactive({ date_from: '', date_to: '', region: '', hub_id: '' });
+const analytics = ref(null); const hubs = ref([]); const loading = ref(false); const error = ref(''); let timer;
+const load = async () => { loading.value = true; error.value = ''; const token = localStorage.getItem('token'); if (token) axios.defaults.headers.common.Authorization = `Bearer ${token}`; try { analytics.value = (await axios.get('/reports/analytics', { params: filters })).data; } catch (e) { error.value = e.response?.data?.message || 'Unable to load report analytics.'; } finally { loading.value = false; } };
+const refresh = () => { clearTimeout(timer); timer = setTimeout(load, 250); };
+watch(filters, refresh); onMounted(async () => { const token = localStorage.getItem('token'); if (token) axios.defaults.headers.common.Authorization = `Bearer ${token}`; hubs.value = (await axios.get('/hubs')).data; load(); });
+</script>
+
+<template>
+  <main class="min-h-screen bg-[#f4f7f6] text-slate-900"><header class="border-b border-slate-200 bg-white"><div class="mx-auto max-w-7xl px-6 py-6"><p class="text-xs font-black uppercase tracking-[0.22em] text-teal-700">Performance intelligence</p><div class="mt-1 flex flex-wrap items-end justify-between gap-4"><div><h1 class="text-3xl font-black">Reports & analytics</h1><p class="mt-1 text-sm text-slate-500">SLA health, delivery volume, and operational exceptions.</p></div><ExportToolbar :filters="filters" /></div></div></header><div class="mx-auto max-w-7xl space-y-6 px-6 py-8"><section class="flex flex-wrap items-end gap-3 border border-slate-200 bg-white p-5 shadow-sm"><label class="text-xs font-bold uppercase tracking-wider text-slate-500">From<input v-model="filters.date_from" type="date" class="mt-1 block border border-slate-300 px-3 py-2 text-sm" /></label><label class="text-xs font-bold uppercase tracking-wider text-slate-500">To<input v-model="filters.date_to" type="date" class="mt-1 block border border-slate-300 px-3 py-2 text-sm" /></label><label class="text-xs font-bold uppercase tracking-wider text-slate-500">Region<select v-model="filters.region" class="mt-1 block border border-slate-300 px-3 py-2 text-sm"><option value="">All regions</option><option>Luzon</option><option>Visayas</option><option>Mindanao</option></select></label><label class="text-xs font-bold uppercase tracking-wider text-slate-500">Hub<select v-model="filters.hub_id" class="mt-1 block border border-slate-300 px-3 py-2 text-sm"><option value="">All hubs</option><option v-for="hub in hubs" :key="hub.id" :value="hub.id">{{ hub.name }}</option></select></label><button class="ml-auto border border-slate-300 px-4 py-2 text-sm font-bold text-slate-600" @click="Object.assign(filters, { date_from: '', date_to: '', region: '', hub_id: '' })">Reset</button></section><p v-if="error" class="bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</p><div v-if="loading" class="border border-slate-200 bg-white p-12 text-center text-slate-400">Loading analytics...</div><AnalyticsOverview v-else-if="analytics" :analytics="analytics" /></div></main>
+</template>

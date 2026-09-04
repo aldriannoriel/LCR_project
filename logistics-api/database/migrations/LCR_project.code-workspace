@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "LCR_project",
+			"path": "D:/LCR_project"
+		},
+		{
+			"name": "logistics-api",
+			"path": "../.."
+		},
+		{
+			"name": "logistics-frontend",
+			"path": "../../../logistics-frontend"
+		}
+	],
+	"settings": {}
+}
