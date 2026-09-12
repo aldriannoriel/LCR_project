@@ -2,22 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
 import Register from '../views/auth/Register.vue';
 import RegistrationSubmitted from '../views/auth/RegistrationSubmitted.vue';
-import PendingApprovals from '../views/admin/PendingApprovals.vue';
-import OrderList from '../views/orders/OrderList.vue';
-import SortingTerminal from '../views/sorting/SortingTerminal.vue';
-import ManifestManager from '../views/manifests/ManifestManager.vue';
-import RiderDirectory from '../views/fleet/RiderDirectory.vue';
-import HubGrid from '../views/hubs/HubGrid.vue';
-import HubInventoryAudit from '../views/hubs/HubInventoryAudit.vue';
-import TransferRequests from '../views/hubs/TransferRequests.vue';
-import ReturnIntakeQueue from '../views/returns/ReturnIntakeQueue.vue';
-import DashboardOverview from '../views/DashboardOverview.vue';
-import ReportBuilder from '../views/reports/ReportBuilder.vue';
-import PickupManager from '../views/pickups/PickupManager.vue';
-import ChatCenter from '../views/chat/ChatCenter.vue';
-import AccountSettings from '../views/account/AccountSettings.vue';
-
-// Courier app
 import CourierLayout from '../courier/layouts/CourierLayout.vue';
 import CourierDashboard from '../courier/views/Dashboard.vue';
 import CourierPickups from '../courier/views/Pickups.vue';
@@ -44,39 +28,8 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/login',
+    redirect: '/courier',
   },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: DashboardOverview,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/orders',
-    name: 'Orders',
-    component: OrderList,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/admin/approvals',
-    name: 'PendingApprovals',
-    component: PendingApprovals,
-    meta: { requiresAuth: true, roles: ['super_admin', 'hub_manager', 'admin'] },
-  },
-  { path: '/sorting', name: 'Sorting', component: SortingTerminal, meta: { requiresAuth: true } },
-  { path: '/manifests', name: 'Manifests', component: ManifestManager, meta: { requiresAuth: true } },
-  { path: '/fleet', name: 'Fleet', component: RiderDirectory, meta: { requiresAuth: true } },
-  { path: '/hubs', name: 'Hubs', component: HubGrid, meta: { requiresAuth: true } },
-  { path: '/hubs/:id/inventory', name: 'HubInventory', component: HubInventoryAudit, meta: { requiresAuth: true } },
-  { path: '/transfers', name: 'Transfers', component: TransferRequests, meta: { requiresAuth: true } },
-  { path: '/returns', name: 'Returns', component: ReturnIntakeQueue, meta: { requiresAuth: true } },
-  { path: '/reports', name: 'Reports', component: ReportBuilder, meta: { requiresAuth: true, roles: ['super_admin', 'hub_manager', 'admin'] } },
-  { path: '/pickups', name: 'Pickups', component: PickupManager, meta: { requiresAuth: true } },
-  { path: '/chat', name: 'Chat', component: ChatCenter, meta: { requiresAuth: true } },
-  { path: '/settings', name: 'Settings', component: AccountSettings, meta: { requiresAuth: true } },
-
-  // ─── Courier / Rider App (Mobile-first Web) ───────────────────────
   {
     path: '/courier',
     component: CourierLayout,
