@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import { Lock, Mail, ShieldAlert, UserPlus, ArrowRight, Building2, Bike } from 'lucide-vue-next';
+import logo from '../assets/alona2.png';
 
 const email = ref('');
 const password = ref('');
@@ -69,10 +70,7 @@ const quickLogin = (account) => {
   <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_24%),linear-gradient(180deg,#f3f4f6_0%,#eef2ff_100%)] px-4 py-12 text-slate-900 selection:bg-blue-500 selection:text-white">
     <div class="w-full max-w-md rounded-[28px] border border-slate-200 bg-white/90 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
       <div class="mb-6 text-center">
-        <div class="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-          <Lock class="h-6 w-6" />
-        </div>
-        <h2 class="text-2xl font-black tracking-tight text-slate-900">Logistics OS</h2>
+        <img :src="logo" alt="" class="mx-auto mb-4 h-16 w-16 object-contain" />
         <p class="mt-1 text-sm text-slate-500">Sign in to your account</p>
       </div>
 
