@@ -12,6 +12,7 @@ class Rider extends Model
     protected $fillable = [
         'user_id',
         'hub_id',
+        'coverage_area_id',
         'vehicle_type',
         'plate_number',
         'status',
@@ -31,6 +32,11 @@ class Rider extends Model
     public function hub(): BelongsTo
     {
         return $this->belongsTo(Hub::class);
+    }
+
+    public function coverageArea(): BelongsTo
+    {
+        return $this->belongsTo(CoverageArea::class);
     }
 
     public function performance(): HasOne

@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useCourierStore } from '../../stores/courier';
+import { useCourierStore } from '../stores/courier';
 import {
   Activity,
   ArrowUpRight,

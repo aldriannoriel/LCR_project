@@ -10,6 +10,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\PickupRequest;
 use App\Models\Rider;
 use App\Models\RiderPerformance;
+use App\Models\ReturnRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -92,7 +93,7 @@ class CourierController extends Controller
 
     public function pickupDetail(Request $request, PickupRequest $pickup)
     {
-        $rider = $request->user()->rider;
+        $rider = $this->riderOrFail($request);
 
         if ($pickup->assigned_rider_id !== $rider->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
@@ -103,7 +104,7 @@ class CourierController extends Controller
 
     public function startPickup(Request $request, PickupRequest $pickup)
     {
-        $rider = $request->user()->rider;
+        $rider = $this->riderOrFail($request);
 
         if ($pickup->assigned_rider_id !== $rider->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
@@ -123,10 +124,13 @@ class CourierController extends Controller
 
     public function completePickup(Request $request, PickupRequest $pickup)
     {
-        $rider = $request->user()->rider;
+        $rider = $this->riderOrFail($request);
 
         if ($pickup->assigned_rider_id !== $rider->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+        if ($pickup->status !== 'in_progress') {
+            return response()->json(['message' => 'Pickup is not currently in progress.'], 422);
         }
 
         $validated = $request->validate([
@@ -186,7 +190,7 @@ class CourierController extends Controller
             ->where('rider_id', $rider->id)
             ->when($status !== 'all', function ($q) use ($status) {
                 match ($status) {
-                    'pending' => $q->where('status', 'out_for_delivery'),
+                    'pending' => $q->whereIn('status', ['in_hub', 'out_for_delivery']),
                     'completed' => $q->where('status', 'delivered'),
                     'failed' => $q->whereIn('delivery_status', ['failed', 'returned']),
                     default => $q,
@@ -200,7 +204,7 @@ class CourierController extends Controller
 
     public function deliveryDetail(Request $request, Order $order)
     {
-        $rider = $request->user()->rider;
+        $rider = $this->riderOrFail($request);
 
         if ($order->rider_id !== $rider->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
@@ -209,12 +213,39 @@ class CourierController extends Controller
         return response()->json($order->load(['hub', 'statusHistories']));
     }
 
-    public function completeDelivery(Request $request, Order $order)
+    public function startDelivery(Request $request, Order $order)
     {
-        $rider = $request->user()->rider;
+        $rider = $this->riderOrFail($request);
 
         if ($order->rider_id !== $rider->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        if ($order->status !== 'in_hub') {
+            return response()->json(['message' => 'Parcel is not ready for pickup from the sorting center.'], 422);
+        }
+
+        $order->update([
+            'status' => 'out_for_delivery',
+            'delivery_status' => 'out_for_delivery',
+            'dispatched_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Parcel picked up from the sorting center and marked out for delivery.',
+            'order' => $order->fresh()->load(['hub', 'statusHistories']),
+        ]);
+    }
+
+    public function completeDelivery(Request $request, Order $order)
+    {
+        $rider = $this->riderOrFail($request);
+
+        if ($order->rider_id !== $rider->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+        if ($order->status !== 'out_for_delivery') {
+            return response()->json(['message' => 'Delivery is not currently out for delivery.'], 422);
         }
 
         $validated = $request->validate([
@@ -255,10 +286,13 @@ class CourierController extends Controller
 
     public function failedDelivery(Request $request, Order $order)
     {
-        $rider = $request->user()->rider;
+        $rider = $this->riderOrFail($request);
 
         if ($order->rider_id !== $rider->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+        if ($order->status !== 'out_for_delivery') {
+            return response()->json(['message' => 'Delivery is not currently out for delivery.'], 422);
         }
 
         $validated = $request->validate([
@@ -269,10 +303,24 @@ class CourierController extends Controller
 
         DB::transaction(function () use ($order, $validated, $rider) {
             $order->update([
-                'status' => 'returned',
+                'status' => 'in_return_queue',
                 'delivery_status' => 'failed',
                 'delivery_failure_reason' => $validated['reason'] . ($validated['notes'] ? ': ' . $validated['notes'] : ''),
             ]);
+
+            ReturnRecord::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'return_reason' => match ($validated['reason']) {
+                        'refused' => 'customer_refused',
+                        'wrong_address' => 'incorrect_address',
+                        'damaged' => 'damaged_goods',
+                        default => 'failed_delivery_3x',
+                    },
+                    'status' => 'pending_intake',
+                    'action_notes' => $validated['notes'] ?? null,
+                ]
+            );
 
             OrderStatusHistory::create([
                 'order_id' => $order->id,
@@ -491,5 +539,14 @@ class CourierController extends Controller
         $user->update(['password' => Hash::make($validated['password'])]);
 
         return response()->json(['message' => 'Password updated.']);
+    }
+
+    private function riderOrFail(Request $request): Rider
+    {
+        $rider = $request->user()->rider;
+
+        abort_if(! $rider, 404, 'No rider profile found.');
+
+        return $rider;
     }
 }

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useCourierStore } from '../../stores/courier';
+import { useCourierStore } from '../stores/courier';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -11,7 +11,8 @@ import {
   RefreshCw,
   X,
   AlertTriangle,
-  Camera
+  Camera,
+  Truck
 } from 'lucide-vue-next';
 
 const courier = useCourierStore();
@@ -112,6 +113,21 @@ const statusColor = (status) => ({
 
 const loadDeliveries = () => {
   courier.fetchDeliveries({ status: activeTab.value });
+};
+
+const startDelivery = async () => {
+  if (!selectedOrder.value) return;
+  completing.value = true;
+  errorMsg.value = '';
+  try {
+    selectedOrder.value = (await courier.startDelivery(selectedOrder.value.id)).order;
+    successMsg.value = 'Parcel picked up from the sorting center. Delivery started.';
+    courier.fetchDeliveries();
+  } catch (e) {
+    errorMsg.value = e.response?.data?.message || 'Failed to start delivery.';
+  } finally {
+    completing.value = false;
+  }
 };
 
 onMounted(loadDeliveries);
@@ -276,6 +292,17 @@ onMounted(loadDeliveries);
             </div>
 
             <!-- Actions -->
+            <div v-if="selectedOrder.status === 'in_hub'" class="pt-4 sticky bottom-0 bg-white border-t border-slate-200 -mx-4 px-4 py-4">
+              <button
+                @click="startDelivery"
+                :disabled="completing"
+                class="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-500 transition disabled:opacity-50"
+              >
+                <Truck class="h-5 w-5" />
+                {{ completing ? 'Starting Delivery...' : 'Pick Up & Start Delivery' }}
+              </button>
+            </div>
+
             <div v-if="selectedOrder.status === 'out_for_delivery'" class="pt-4 space-y-3 sticky bottom-0 bg-white border-t border-slate-200 -mx-4 px-4 py-4">
               <button
                 @click="openCompleteDialog"

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useCourierStore } from '../../stores/courier';
+import { useCourierStore } from '../stores/courier';
 import {
   Bike,
   Calendar,

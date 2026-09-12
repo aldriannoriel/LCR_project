@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { useCourierStore } from '../../stores/courier';
+import { useCourierStore } from '../stores/courier';
 import { useAuthStore } from '../../stores/auth';
 import { echo } from '../../lib/echo';
 import { Bike, Package, X } from 'lucide-vue-next';

@@ -10,7 +10,13 @@ const orders = ref([]); const selected = ref([]); const error = ref(''); const s
 const limit = { motorcycle: 30, tricycle: 50, van: 100, truck: 300 };
 const capacity = computed(() => limit[props.rider.vehicle_type] || 30);
 const selectedWeight = computed(() => selected.value.reduce((sum, id) => sum + Number(orders.value.find((order) => order.id === id)?.weight_kg || 0), 0));
-const load = async () => { store.auth(); orders.value = (await axios.get('/orders', { params: { hub_id: props.rider.hub_id, per_page: 100 } })).data.data.filter((order) => ['received', 'in_transit'].includes(order.status) && !order.rider_id); };
+const load = async () => {
+  store.auth();
+  const area = props.rider.coverage_area;
+  orders.value = (await axios.get('/orders', { params: { hub_id: props.rider.hub_id, per_page: 100 } })).data.data
+    .filter((order) => ['received', 'in_transit'].includes(order.status) && !order.rider_id)
+    .filter((order) => !area || [area.province, area.city_municipality].some((part) => order.recipient_address?.toLowerCase().includes(part.toLowerCase())));
+};
 const submit = async () => { saving.value = true; error.value = ''; try { await store.assignOrders({ rider_id: props.rider.id, order_ids: selected.value }); emit('assigned'); } catch (e) { error.value = e.response?.data?.message || 'Assignments could not be saved.'; } finally { saving.value = false; } };
 onMounted(load);
 </script>

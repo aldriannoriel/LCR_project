@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
         'HUB-MIN-CG', 'HUB-MIN-DVO', 'HUB-MIN-CDO',
     ])->orderBy('name')->get(['id', 'name', 'code'])));
     Route::get('/archipelagos', fn () => response()->json(\App\Models\Archipelago::orderBy('name')->get(['id', 'name', 'code'])));
+    Route::get('/coverage-areas', fn () => response()->json(\App\Models\CoverageArea::with('hub')->orderBy('province')->orderBy('city_municipality')->get()));
     Route::post('/orders/intake', [OrderController::class, 'intake']);
     Route::post('/orders/confirm-arrivals', [OrderController::class, 'confirmArrivals']);
     Route::post('/orders/{order}/override', [OrderController::class, 'override']);
@@ -109,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Delivery management
         Route::get('/deliveries', [CourierController::class, 'deliveries']);
         Route::get('/deliveries/{order}', [CourierController::class, 'deliveryDetail']);
+        Route::post('/deliveries/{order}/start', [CourierController::class, 'startDelivery']);
         Route::post('/deliveries/{order}/complete', [CourierController::class, 'completeDelivery']);
         Route::post('/deliveries/{order}/failed', [CourierController::class, 'failedDelivery']);
 

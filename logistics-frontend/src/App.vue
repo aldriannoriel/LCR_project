@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from './layouts/AppLayout.vue';
-import CourierLayout from './layouts/CourierLayout.vue';
+import CourierLayout from './courier/layouts/CourierLayout.vue';
 </script>
 
 <template>

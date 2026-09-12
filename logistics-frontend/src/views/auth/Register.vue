@@ -8,6 +8,7 @@ import {
   FileText, Upload, CheckCircle2, AlertCircle, ArrowRight,
   ShieldCheck, Eye, EyeOff, Loader2, Bike, Package, ChevronDown
 } from 'lucide-vue-next';
+import AccountTypeSelector from '../../components/auth/AccountTypeSelector.vue';
 
 const router = useRouter();
 
@@ -213,60 +214,18 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 px-4 py-10 text-slate-100 antialiased selection:bg-teal-500 selection:text-white">
+  <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_24%),linear-gradient(180deg,#f3f4f6_0%,#eef2ff_100%)] px-4 py-10 text-slate-900 antialiased selection:bg-blue-500 selection:text-white">
     <div class="mx-auto max-w-3xl">
-      <!-- Header -->
       <div class="mb-8 text-center">
-        <div class="inline-flex items-center gap-2 rounded-full bg-teal-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-teal-400 border border-teal-500/20">
+        <div class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-blue-700">
           <ShieldCheck class="h-4 w-4" />
           Join Logistics OS
         </div>
-        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Create Your Account</h1>
-        <p class="mt-2 text-sm text-slate-400">All registrations undergo verification before access is granted.</p>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl text-slate-900">Create Your Account</h1>
+        <p class="mt-2 text-sm text-slate-500">All registrations undergo verification before access is granted.</p>
       </div>
 
-      <!-- Account Type Selector -->
-      <div class="mb-8 grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          @click="accountType = 'logistics'"
-          class="relative rounded-xl border-2 p-5 text-left transition hover:scale-[1.01] active:scale-[0.99]"
-          :class="accountType === 'logistics' ? 'border-teal-500 bg-teal-500/10' : 'border-slate-700 bg-slate-900/80 hover:border-slate-600'"
-        >
-          <div class="flex items-start gap-3">
-            <div class="h-11 w-11 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shrink-0">
-              <Package class="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p class="font-bold text-white">Logistics / Seller</p>
-              <p class="mt-0.5 text-xs text-slate-400">Business pickups & shipments</p>
-            </div>
-          </div>
-          <div v-if="accountType === 'logistics'" class="absolute right-4 top-4">
-            <CheckCircle2 class="h-5 w-5 text-teal-400" />
-          </div>
-        </button>
-
-        <button
-          type="button"
-          @click="accountType = 'courier'"
-          class="relative rounded-xl border-2 p-5 text-left transition hover:scale-[1.01] active:scale-[0.99]"
-          :class="accountType === 'courier' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 bg-slate-900/80 hover:border-slate-600'"
-        >
-          <div class="flex items-start gap-3">
-            <div class="h-11 w-11 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
-              <Bike class="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p class="font-bold text-white">Courier / Rider</p>
-              <p class="mt-0.5 text-xs text-slate-400">Deliveries & earn money</p>
-            </div>
-          </div>
-          <div v-if="accountType === 'courier'" class="absolute right-4 top-4">
-            <CheckCircle2 class="h-5 w-5 text-blue-400" />
-          </div>
-        </button>
-      </div>
+      <AccountTypeSelector v-model="accountType" />
 
       <!-- No type selected message -->
       <div v-if="!accountType" class="rounded-2xl border border-slate-700 bg-slate-900/80 p-8 text-center">
@@ -275,7 +234,7 @@ const handleSubmit = async () => {
       </div>
 
       <!-- Main Form Card -->
-      <div v-if="accountType" class="rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl backdrop-blur sm:p-10">
+      <div v-if="accountType" class="rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-10">
         <!-- Error Alert -->
         <div v-if="generalError" class="mb-6 flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
           <AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />

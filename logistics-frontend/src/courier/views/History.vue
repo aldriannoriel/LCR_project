@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useCourierStore } from '../../stores/courier';
+import { useCourierStore } from '../stores/courier';
 import {
   ArrowRightLeft,
   Bike,

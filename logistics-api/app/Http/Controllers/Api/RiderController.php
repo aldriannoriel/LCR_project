@@ -8,14 +8,18 @@ use App\Models\Order;
 use App\Models\Rider;
 use App\Models\RiderPerformance;
 use App\Models\User;
+use App\Models\CoverageArea;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RiderController extends Controller
 {
     public function index(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate([
             'search' => ['nullable', 'string'],
             'hub_id' => ['nullable', 'integer'],
@@ -27,7 +31,7 @@ class RiderController extends Controller
         ]);
 
         return response()->json(
-            Rider::with(['hub', 'user', 'performance'])
+            Rider::with(['hub', 'coverageArea', 'user', 'performance'])
                 ->when($validated['search'] ?? null, function ($q, $search) {
                     $q->where(function ($sub) use ($search) {
                         $sub->where('plate_number', 'like', "%{$search}%")
@@ -51,6 +55,8 @@ class RiderController extends Controller
 
     public function store(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $data = $this->validated($request);
 
         return DB::transaction(function () use ($data, $request) {
@@ -75,6 +81,7 @@ class RiderController extends Controller
             $rider = Rider::create([
                 'user_id' => $user->id,
                 'hub_id' => $data['hub_id'],
+                'coverage_area_id' => $data['coverage_area_id'] ?? null,
                 'vehicle_type' => $data['vehicle_type'],
                 'plate_number' => $data['plate_number'] ?? null,
                 'license_number' => $data['license_number'] ?? null,
@@ -93,10 +100,12 @@ class RiderController extends Controller
 
     public function update(Request $request, Rider $rider)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $data = $this->validated($request, false);
 
         $rider->update(collect($data)->only([
-            'hub_id', 'vehicle_type', 'plate_number', 'license_number', 'status', 'phone_number', 'application_status'
+            'hub_id', 'coverage_area_id', 'vehicle_type', 'plate_number', 'license_number', 'status', 'phone_number', 'application_status'
         ])->all());
 
         if (isset($data['name']) || isset($data['email'])) {
@@ -108,6 +117,8 @@ class RiderController extends Controller
 
     public function status(Request $request, Rider $rider)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $data = $request->validate([
             'status' => ['required', 'in:available,on_delivery,off_duty,suspended'],
         ]);
@@ -119,6 +130,8 @@ class RiderController extends Controller
 
     public function approveApplication(Request $request, Rider $rider)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $rider->update([
             'application_status' => 'approved',
             'status' => 'available',
@@ -133,6 +146,8 @@ class RiderController extends Controller
 
     public function rejectApplication(Request $request, Rider $rider)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $validated = $request->validate([
             'reason' => 'required|string|min:5|max:1000',
         ]);
@@ -151,6 +166,8 @@ class RiderController extends Controller
 
     public function toggleActive(Request $request, Rider $rider)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $newStatus = $rider->status === 'suspended' ? 'available' : 'suspended';
         $rider->update(['status' => $newStatus]);
 
@@ -162,6 +179,8 @@ class RiderController extends Controller
 
     public function details(Rider $rider)
     {
+        $this->requireAnyRole(request(), ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         return response()->json(
             $rider->load(['user', 'hub', 'performance', 'orders.routePlan'])
                 ->load(['manifests' => fn ($query) => $query->whereIn('status', ['draft', 'dispatched'])])
@@ -171,21 +190,35 @@ class RiderController extends Controller
 
     public function assignOrders(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $data = $request->validate([
             'rider_id' => ['required', 'exists:riders,id'],
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['integer', 'exists:orders,id'],
         ]);
 
-        $rider = Rider::findOrFail($data['rider_id']);
+        $rider = Rider::with('coverageArea')->findOrFail($data['rider_id']);
         $limit = ['motorcycle' => 30, 'tricycle' => 50, 'van' => 100, 'truck' => 300][$rider->vehicle_type];
         abort_if(count($data['order_ids']) > $limit, 422, "This vehicle can carry at most {$limit} packages.");
+
+        $ordersToAssign = Order::whereIn('id', $data['order_ids'])->whereNull('rider_id')->get();
+        if ($rider->coverageArea) {
+            $area = $rider->coverageArea;
+            $outsideArea = $ordersToAssign->first(function (Order $order) use ($area) {
+                $address = Str::lower($order->recipient_address);
+                return ! Str::contains($address, Str::lower($area->province))
+                    && ! Str::contains($address, Str::lower($area->city_municipality));
+            });
+
+            abort_if($outsideArea, 422, "Parcel {$outsideArea->awb_number} is outside this rider's assigned delivery area.");
+        }
 
         DB::transaction(function () use ($data, $rider) {
             $orders = Order::whereIn('id', $data['order_ids'])->whereNull('rider_id')->get();
             Order::whereIn('id', $data['order_ids'])->whereNull('rider_id')->update([
                 'rider_id' => $rider->id,
-                'status' => 'out_for_delivery',
+                'status' => 'in_hub',
                 'delivery_status' => 'assigned',
                 'assigned_at' => now(),
             ]);
@@ -202,7 +235,7 @@ class RiderController extends Controller
             }
         });
 
-        return response()->json($rider->load(['user', 'hub', 'performance', 'orders']));
+        return response()->json($rider->load(['user', 'hub', 'coverageArea', 'performance', 'orders']));
     }
 
     private function validated(Request $request, bool $creating = true): array
@@ -214,6 +247,7 @@ class RiderController extends Controller
             'email' => [$creating ? 'required' : 'sometimes', 'email'],
             'password' => ['nullable', 'string', 'min:8'],
             'hub_id' => ['required', 'exists:hubs,id'],
+            'coverage_area_id' => ['nullable', 'exists:coverage_areas,id'],
             'vehicle_type' => ['required', 'in:motorcycle,van,tricycle,truck'],
             'plate_number' => ['nullable', 'string'],
             'license_number' => ['nullable', 'string'],

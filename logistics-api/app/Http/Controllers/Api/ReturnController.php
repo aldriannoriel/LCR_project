@@ -14,6 +14,8 @@ class ReturnController extends Controller
 {
     public function index(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $query = ReturnRecord::with(['order.currentHub', 'order.hub', 'actionTaker'])->latest()
             ->when($request->reason, fn ($q, $value) => $q->where('return_reason', $value))
             ->when($request->status, fn ($q, $value) => $q->where('status', $value))
@@ -24,6 +26,8 @@ class ReturnController extends Controller
 
     public function intake(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $data = $request->validate(['awb_number' => ['required', 'string'], 'return_reason' => ['required', 'in:failed_delivery_3x,customer_refused,incorrect_address,damaged_goods,expired_holding'], 'notes' => ['nullable', 'string']]);
         $return = DB::transaction(function () use ($data, $request) {
             $order = Order::where('awb_number', $data['awb_number'])->lockForUpdate()->firstOrFail();
@@ -37,6 +41,9 @@ class ReturnController extends Controller
 
     public function action(Request $request, ReturnRecord $return)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+        abort_unless(in_array($return->status, ['pending_intake', 'in_reverse_queue'], true), 422, 'This return has already been processed.');
+
         $data = $request->validate(['action' => ['required', 'in:reattempt,rts,dispose'], 'reason_code' => ['required', 'string'], 'notes' => ['required', 'string']]);
         if ($data['action'] === 'dispose' && blank($data['reason_code'])) abort(422, 'A disposal reason is required.');
         $updated = DB::transaction(function () use ($data, $request, $return) {
@@ -57,6 +64,8 @@ class ReturnController extends Controller
 
     public function history(Order $order)
     {
+        $this->requireAnyRole(request(), ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         return response()->json($order->statusHistories()->with(['hub', 'performer'])->oldest()->get());
     }
 }

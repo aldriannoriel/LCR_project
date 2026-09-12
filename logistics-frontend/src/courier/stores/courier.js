@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { axios } from '../lib/echo';
+import { axios } from '../../lib/echo';
 
 export const useCourierStore = defineStore('courier', {
   state: () => ({
@@ -89,6 +89,13 @@ export const useCourierStore = defineStore('courier', {
       this._auth();
       this.currentDelivery = (await axios.get(`/courier/deliveries/${id}`)).data;
       return this.currentDelivery;
+    },
+
+    async startDelivery(id) {
+      this._auth();
+      const res = await axios.post(`/courier/deliveries/${id}/start`);
+      await this.fetchDashboard();
+      return res.data;
     },
 
     async completeDelivery(id, payload) {

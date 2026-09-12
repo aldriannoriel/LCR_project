@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue';
 import { axios } from '../../lib/echo';
 import { useAuthStore } from '../../stores/auth';
 import { philippineAddressService } from '../../services/philippineAddressService';
+import PickupCard from '../../components/pickups/PickupCard.vue';
 import {
   PackagePlus,
   Truck,
@@ -394,104 +395,14 @@ onMounted(() => {
 
       <!-- Pickups Grid / Table -->
       <div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div
+        <PickupCard
           v-for="p in pickups"
           :key="p.id"
-          class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition"
-        >
-          <div>
-            <div class="flex items-start justify-between">
-              <div>
-                <span class="font-mono text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">
-                  {{ p.request_code }}
-                </span>
-                <h3 class="mt-2 text-base font-bold text-slate-900">
-                  {{ p.seller?.business_name || p.contact_person }}
-                </h3>
-              </div>
-
-              <!-- Status badge -->
-              <span
-                v-if="p.status === 'completed'"
-                class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800"
-              >
-                <CheckCircle2 class="h-3 w-3" /> Collected
-              </span>
-              <span
-                v-else-if="p.status === 'assigned'"
-                class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800"
-              >
-                <Truck class="h-3 w-3" /> Dispatched
-              </span>
-              <span
-                v-else-if="p.status === 'verified'"
-                class="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-1 text-xs font-bold text-teal-800"
-              >
-                <FileCheck class="h-3 w-3" /> Verified
-              </span>
-              <span
-                v-else
-                class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"
-              >
-                <Clock class="h-3 w-3" /> Pending Review
-              </span>
-            </div>
-
-            <!-- Details -->
-            <div class="mt-4 space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
-              <div class="flex items-center gap-2">
-                <MapPin class="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span class="truncate">{{ p.barangay }}, {{ p.city_municipality }}, {{ p.province }}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <Phone class="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>{{ p.contact_number }} ({{ p.contact_person }})</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <Calendar class="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>Schedule: <strong>{{ p.scheduled_date }}</strong> ({{ p.time_slot }})</span>
-              </div>
-              <div class="flex items-center gap-2 text-slate-800 font-semibold">
-                <PackagePlus class="h-3.5 w-3.5 text-teal-600 shrink-0" />
-                <span>Est. Volume: {{ p.estimated_parcels }} parcels</span>
-              </div>
-              <div v-if="p.rider" class="flex items-center gap-2 text-blue-700 font-semibold pt-1">
-                <Truck class="h-3.5 w-3.5 shrink-0" />
-                <span>Assigned Rider: {{ p.rider.user?.name || 'Rider #' + p.rider.id }} ({{ p.rider.vehicle_type }})</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions footer -->
-          <div class="mt-5 border-t border-slate-100 pt-3 flex flex-wrap items-center justify-end gap-2">
-            <!-- Verify button for dispatchers -->
-            <button
-              v-if="p.status === 'pending'"
-              @click="openVerifyDialog(p)"
-              class="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-500 shadow-sm"
-            >
-              <Check class="h-3.5 w-3.5" /> Verify & Approve
-            </button>
-
-            <!-- Assign rider button -->
-            <button
-              v-if="p.status === 'verified'"
-              @click="openAssignDialog(p)"
-              class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-500 shadow-sm"
-            >
-              <Truck class="h-3.5 w-3.5" /> Assign Rider
-            </button>
-
-            <!-- Complete pickup button -->
-            <button
-              v-if="p.status === 'assigned'"
-              @click="openCompleteDialog(p)"
-              class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 shadow-sm"
-            >
-              <CheckCircle2 class="h-3.5 w-3.5" /> Confirm Collected
-            </button>
-          </div>
-        </div>
+          :pickup="p"
+          @verify="openVerifyDialog"
+          @assign="openAssignDialog"
+          @complete="openCompleteDialog"
+        />
       </div>
 
       <div v-if="!pickups.length && !loading" class="mt-8 rounded-xl border border-slate-200 bg-white p-12 text-center text-slate-500">

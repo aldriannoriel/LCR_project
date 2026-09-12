@@ -42,31 +42,42 @@ class OrderController extends Controller
 
     public function intake(Request $request): JsonResponse
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate([
             'awb_number' => ['required', 'string', 'max:255'],
             'hub_id' => ['required', 'integer', 'exists:hubs,id'],
         ]);
 
-        $order = Order::where('awb_number', $validated['awb_number'])->first();
-        if (! $order) {
-            return response()->json(['message' => 'AWB number was not found.'], 404);
-        }
-        if ($order->status !== 'pending') {
-            return response()->json(['message' => 'This order has already been processed.'], 422);
-        }
+        $order = DB::transaction(function () use ($validated) {
+            $order = Order::where('awb_number', $validated['awb_number'])
+                ->lockForUpdate()
+                ->first();
 
-        $order->update([
-            'hub_id' => $validated['hub_id'],
-            'current_hub_id' => $validated['hub_id'],
-            'status' => 'received',
-            'scanned_at' => now(),
-        ]);
+            if (! $order) {
+                abort(404, 'AWB number was not found.');
+            }
+            if ($order->status !== 'pending') {
+                abort(422, 'This order has already been processed.');
+            }
+
+            $order->update([
+                'hub_id' => $validated['hub_id'],
+                'current_hub_id' => $validated['hub_id'],
+                'status' => 'received',
+                'scanned_at' => now(),
+            ]);
+
+            return $order;
+        });
 
         return response()->json(['message' => 'Order received successfully.', 'order' => $order->load('hub')]);
     }
 
     public function confirmArrivals(Request $request): JsonResponse
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate([
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['integer', 'exists:orders,id'],
@@ -89,6 +100,8 @@ class OrderController extends Controller
 
     public function override(Request $request, Order $order): JsonResponse
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate([
             'status' => ['required', 'in:damaged,flagged'],
             'reason_code' => ['required', 'string', 'max:100'],

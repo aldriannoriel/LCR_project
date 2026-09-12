@@ -83,11 +83,21 @@ class PickupRequestController extends Controller
 
     public function show(PickupRequest $pickupRequest)
     {
+        $user = request()->user();
+        abort_unless(
+            $pickupRequest->seller_id === $user->id || $user->hasAnyRole(['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']),
+            403,
+            'You are not authorized to view this pickup request.'
+        );
+
         return response()->json($pickupRequest->load(['seller', 'hub', 'rider.user', 'verifiedBy']));
     }
 
     public function verify(Request $request, PickupRequest $pickupRequest)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+        abort_unless($pickupRequest->status === 'pending', 422, 'Only pending pickup requests can be verified.');
+
         $validated = $request->validate([
             'hub_id' => 'nullable|exists:hubs,id',
             'verification_notes' => 'nullable|string|max:1000',
@@ -109,6 +119,9 @@ class PickupRequestController extends Controller
 
     public function assignRider(Request $request, PickupRequest $pickupRequest)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+        abort_unless($pickupRequest->status === 'verified', 422, 'Only verified pickup requests can be assigned.');
+
         $validated = $request->validate([
             'rider_id' => 'required|exists:riders,id',
         ]);
@@ -134,6 +147,9 @@ class PickupRequestController extends Controller
 
     public function complete(Request $request, PickupRequest $pickupRequest)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+        abort_unless(in_array($pickupRequest->status, ['assigned', 'in_progress'], true), 422, 'This pickup is not ready to be completed.');
+
         $validated = $request->validate([
             'actual_parcels_collected' => 'required|integer|min:1',
             'create_inbound_parcels' => 'nullable|boolean',
@@ -174,6 +190,9 @@ class PickupRequestController extends Controller
 
     public function cancel(Request $request, PickupRequest $pickupRequest)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+        abort_unless(! in_array($pickupRequest->status, ['completed', 'cancelled'], true), 422, 'This pickup can no longer be cancelled.');
+
         $validated = $request->validate([
             'reason' => 'required|string|max:1000',
         ]);

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useCourierStore } from '../../stores/courier';
+import { useCourierStore } from '../stores/courier';
 import {
   ArrowLeft,
   Calendar,
@@ -276,7 +276,7 @@ onMounted(loadPickups);
                 class="w-full flex items-center justify-center gap-2 bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-500 disabled:opacity-50 transition"
               >
                 <Truck class="h-5 w-5" />
-                {{ completing ? 'Starting...' : 'Start Pickup' }}
+                {{ completing ? 'Accepting...' : 'Accept Pickup' }}
               </button>
 
               <button
@@ -285,7 +285,7 @@ onMounted(loadPickups);
                 class="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-500 transition"
               >
                 <CheckCircle2 class="h-5 w-5" />
-                Complete Pickup
+                Scan & Confirm Parcel
               </button>
 
               <!-- Complete Dialog -->

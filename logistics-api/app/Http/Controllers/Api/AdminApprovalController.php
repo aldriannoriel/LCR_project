@@ -15,6 +15,8 @@ class AdminApprovalController extends Controller
 {
     public function index(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $status = $request->query('status', 'pending');
         $search = $request->query('search');
 
@@ -39,11 +41,15 @@ class AdminApprovalController extends Controller
 
     public function show(User $user)
     {
+        $this->requireAnyRole(request(), ['Admin', 'Super Admin', 'Hub Manager']);
+
         return response()->json($user->load('roles', 'hub'));
     }
 
     public function approve(Request $request, User $user)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $user->update([
             'approval_status' => 'approved',
             'rejection_reason' => null,
@@ -63,6 +69,8 @@ class AdminApprovalController extends Controller
 
     public function reject(Request $request, User $user)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $validated = $request->validate([
             'reason' => 'required|string|min:5|max:1000',
         ]);
@@ -86,6 +94,8 @@ class AdminApprovalController extends Controller
 
     public function viewDocument(Request $request, User $user, string $type)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
         $path = match ($type) {
             'id', 'id_document' => $user->id_document_path,
             'permit', 'business_permit' => $user->business_permit_path,

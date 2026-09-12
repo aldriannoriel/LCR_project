@@ -15,6 +15,8 @@ class SortingController extends Controller
 {
     public function autoSort(Request $request, RoutingEngineService $routing, BinAssignmentService $bins)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate(['order_ids' => ['nullable', 'array', 'min:1'], 'order_ids.*' => ['integer', 'exists:orders,id']]);
         $orders = Order::with('hub.parentHub')->where('status', 'received')
             ->when($validated['order_ids'] ?? null, fn ($query, $ids) => $query->whereIn('id', $ids))
@@ -39,6 +41,8 @@ class SortingController extends Controller
 
     public function routeAndBin(Request $request, RoutingEngineService $routing, BinAssignmentService $bins)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate(['awb_number' => ['required', 'string']]);
         $order = Order::where('awb_number', $validated['awb_number'])->first();
         if (! $order) return response()->json(['message' => 'AWB number was not found.'], 404);
@@ -56,6 +60,8 @@ class SortingController extends Controller
 
     public function bins(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $request->validate(['hub_id' => ['required', 'integer', 'exists:hubs,id']]);
         return response()->json(Bin::with('targetHub')->where('hub_id', $request->integer('hub_id'))->orderBy('bin_code')->get());
     }

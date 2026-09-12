@@ -18,13 +18,13 @@ import ChatCenter from '../views/chat/ChatCenter.vue';
 import AccountSettings from '../views/account/AccountSettings.vue';
 
 // Courier app
-import CourierLayout from '../layouts/CourierLayout.vue';
-import CourierDashboard from '../views/courier/Dashboard.vue';
-import CourierPickups from '../views/courier/Pickups.vue';
-import CourierDeliveries from '../views/courier/Deliveries.vue';
-import CourierEarnings from '../views/courier/Earnings.vue';
-import CourierHistory from '../views/courier/History.vue';
-import CourierSettings from '../views/courier/Settings.vue';
+import CourierLayout from '../courier/layouts/CourierLayout.vue';
+import CourierDashboard from '../courier/views/Dashboard.vue';
+import CourierPickups from '../courier/views/Pickups.vue';
+import CourierDeliveries from '../courier/views/Deliveries.vue';
+import CourierEarnings from '../courier/views/Earnings.vue';
+import CourierHistory from '../courier/views/History.vue';
+import CourierSettings from '../courier/views/Settings.vue';
 
 const routes = [
   {

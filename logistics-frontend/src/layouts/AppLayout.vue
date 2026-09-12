@@ -33,17 +33,17 @@ const quickOpen = ref(false);
 
 const navigation = computed(() => [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Inbound / Orders', to: '/orders', icon: PackageSearch },
-  { label: 'Sorting Engine', to: '/sorting', icon: ScanLine },
-  { label: 'Rider Fleet', to: '/fleet', icon: Truck },
-  { label: 'Hub Inventory', to: '/hubs', icon: Boxes },
-  { label: 'Returns Queue', to: '/returns', icon: ArrowRightLeft },
-  { label: 'User Approvals', to: '/admin/approvals', icon: ShieldCheck, roles: ['super_admin', 'hub_manager', 'admin'] },
-  { label: 'Reports & Analytics', to: '/reports', icon: BarChart3, roles: ['super_admin', 'hub_manager', 'admin'] },
-  { label: 'Parcel Pickups', to: '/pickups', icon: PackagePlus },
-  { label: 'Messaging & Chat', to: '/chat', icon: MessageSquare },
-  { label: 'Courier App', to: '/courier', icon: Bike, highlight: true },
-  { label: 'Account Settings', to: '/settings', icon: Settings },
+  { label: 'Incoming Parcels', to: '/orders', icon: PackageSearch },
+  { label: 'Sort Parcels', to: '/sorting', icon: ScanLine },
+  { label: 'Riders', to: '/fleet', icon: Truck },
+  { label: 'Hub Stock', to: '/hubs', icon: Boxes },
+  { label: 'Returns', to: '/returns', icon: ArrowRightLeft },
+  { label: 'Approve Users', to: '/admin/approvals', icon: ShieldCheck, roles: ['super_admin', 'hub_manager', 'admin'] },
+  { label: 'Reports', to: '/reports', icon: BarChart3, roles: ['super_admin', 'hub_manager', 'admin'] },
+  { label: 'Pickup Requests', to: '/pickups', icon: PackagePlus },
+  { label: 'Messages', to: '/chat', icon: MessageSquare },
+  { label: 'Courier', to: '/courier', icon: Bike, highlight: true },
+  { label: 'Settings', to: '/settings', icon: Settings },
 ].filter((item) => !item.roles || item.roles.some((allowedRole) => auth.hasRole(allowedRole))));
 
 const userEmail = computed(() => auth.user?.email || 'Operations user');
@@ -77,49 +77,51 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100">
+  <div class="app-theme min-h-screen bg-[#f3f4f6] text-slate-900">
     <div v-if="mobileOpen" class="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" @click="mobileOpen = false" />
     <aside
-      class="fixed left-0 top-0 z-50 flex h-screen w-64 -translate-x-full flex-col bg-slate-900 text-white transition-transform lg:translate-x-0"
+      class="fixed left-0 top-0 z-50 flex h-screen w-64 -translate-x-full flex-col border-r border-slate-200 bg-white/90 text-slate-800 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-transform lg:translate-x-0"
       :class="mobileOpen ? 'translate-x-0' : ''"
     >
-      <div class="flex items-center justify-between border-b border-white/10 px-5 py-5">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-5">
         <div>
           <div class="flex items-center gap-2">
-            <Activity class="h-5 w-5 text-teal-400" />
-            <span class="text-lg font-black tracking-tight">Logistics OS</span>
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+              <Activity class="h-4 w-4" />
+            </div>
+            <span class="text-lg font-black tracking-tight text-slate-900">Logistics OS</span>
           </div>
-          <span class="mt-2 inline-flex max-w-full truncate bg-teal-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-300">
+          <span class="mt-2 inline-flex max-w-full truncate rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">
             {{ hubName }}
           </span>
         </div>
         <button class="lg:hidden" aria-label="Close navigation" @click="mobileOpen = false">
-          <X class="h-5 w-5" />
+          <X class="h-5 w-5 text-slate-500" />
         </button>
       </div>
 
       <div class="relative px-4 py-4">
         <button
-          class="flex w-full items-center justify-between bg-blue-600 px-3 py-2.5 text-sm font-bold shadow-lg shadow-blue-950/20"
+          class="flex w-full items-center justify-between rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20"
           @click="quickOpen = !quickOpen"
         >
           <span class="flex items-center gap-2">
             <ChevronDown class="h-4 w-4" :class="quickOpen ? 'rotate-180' : ''" /> Quick actions
           </span>
-          <span class="text-blue-200">+</span>
+          <span class="text-blue-100">+</span>
         </button>
-        <div v-if="quickOpen" class="absolute left-4 right-4 top-16 z-10 border border-slate-700 bg-slate-800 p-1 shadow-xl">
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-700" @click="go('/orders?focus=scanner')">
-            <ScanLine class="h-4 w-4 text-teal-300" />Scan inbound AWB
+        <div v-if="quickOpen" class="absolute left-4 right-4 top-16 z-10 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/orders?focus=scanner')">
+            <ScanLine class="h-4 w-4 text-blue-600" />Scan inbound AWB
           </button>
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-700" @click="go('/transfers?new=1')">
-            <ArrowRightLeft class="h-4 w-4 text-amber-300" />Create transfer request
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/transfers?new=1')">
+            <ArrowRightLeft class="h-4 w-4 text-amber-600" />Create transfer request
           </button>
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-700" @click="go('/fleet?assign=1')">
-            <Users class="h-4 w-4 text-blue-300" />Assign rider
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/fleet?assign=1')">
+            <Users class="h-4 w-4 text-indigo-600" />Assign rider
           </button>
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-700" @click="go('/returns')">
-            <ClipboardList class="h-4 w-4 text-rose-300" />Process return
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/returns')">
+            <ClipboardList class="h-4 w-4 text-rose-600" />Process return
           </button>
         </div>
       </div>
@@ -129,9 +131,9 @@ onMounted(async () => {
           v-for="item in navigation"
           :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-          :class="item.highlight ? 'bg-teal-600/20 text-teal-300 hover:bg-teal-600/30 font-bold' : ''"
-          active-class="bg-blue-600 text-white font-semibold rounded-lg"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+          :class="item.highlight ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 font-bold' : ''"
+          active-class="bg-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/15 hover:bg-blue-500 hover:text-white"
           @click="mobileOpen = false"
         >
           <component :is="item.icon" class="h-5 w-5 shrink-0" />
@@ -139,21 +141,21 @@ onMounted(async () => {
         </router-link>
       </nav>
 
-      <footer class="border-t border-white/10 p-4">
+      <footer class="border-t border-slate-200 p-4">
         <div class="mb-3 min-w-0">
-          <p class="truncate text-sm font-semibold text-white">{{ userEmail }}</p>
-          <span class="mt-1 inline-flex bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+          <p class="truncate text-sm font-semibold text-slate-900">{{ userEmail }}</p>
+          <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700">
             {{ role }}
           </span>
         </div>
-        <button class="flex w-full items-center gap-2 px-2 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white" @click="logout">
+        <button class="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" @click="logout">
           <LogOut class="h-4 w-4" />Log out
         </button>
       </footer>
     </aside>
 
     <div class="min-h-screen lg:ml-64">
-      <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:hidden">
+      <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur-xl lg:hidden">
         <button class="text-slate-700" aria-label="Open navigation" @click="mobileOpen = true">
           <Menu class="h-6 w-6" />
         </button>
