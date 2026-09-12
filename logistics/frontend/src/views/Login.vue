@@ -67,7 +67,7 @@ const quickLogin = (account) => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_24%),linear-gradient(180deg,#f3f4f6_0%,#eef2ff_100%)] px-4 py-12 text-slate-900 selection:bg-blue-500 selection:text-white">
+  <div class="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(7,143,150,0.12),_transparent_24%),linear-gradient(180deg,#ffffff_0%,#f2fbfb_100%)] px-4 py-12 text-slate-900 selection:bg-teal-500 selection:text-white">
     <div class="w-full max-w-md rounded-[28px] border border-slate-200 bg-white/90 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
       <div class="mb-6 text-center">
         <img :src="logo" alt="" class="mx-auto mb-4 block h-auto w-64 max-w-full object-contain" />
