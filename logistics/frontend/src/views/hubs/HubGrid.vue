@@ -1,0 +1,14 @@
+<script setup>
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useHubStore } from '../../stores/hub';
+
+const store = useHubStore(); const router = useRouter(); const type = ref(''); const archipelago = ref('');
+const load = () => store.fetchGrid({ hub_type: type.value || undefined, archipelago_id: archipelago.value || undefined });
+const barClass = (value) => value >= 90 ? 'bg-red-500 animate-pulse' : value >= 70 ? 'bg-amber-400' : 'bg-emerald-500';
+onMounted(load);
+</script>
+
+<template>
+  <main class="min-h-screen bg-[#f4f7f6] text-slate-900"><header class="border-b border-slate-200 bg-white"><div class="mx-auto max-w-7xl px-6 py-6"><p class="text-xs font-black uppercase tracking-[0.22em] text-teal-700">Network control</p><div class="mt-1 flex flex-wrap items-center justify-between gap-4"><h1 class="text-3xl font-black">Hub capacity</h1><div class="flex gap-2"><select v-model="archipelago" @change="load" class="border px-3 py-2 text-sm"><option value="">All archipelagos</option><option value="1">Luzon</option><option value="2">Visayas</option><option value="3">Mindanao</option></select><select v-model="type" @change="load" class="border px-3 py-2 text-sm"><option value="">All hub types</option><option value="national">National</option><option value="gateway">Gateway</option><option value="regional">Regional</option></select></div></div></div></header><div class="mx-auto max-w-7xl px-6 py-8"><div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3"><article v-for="hub in store.hubs" :key="hub.id" class="border border-slate-200 bg-white p-5 shadow-sm" :class="hub.utilization_percentage >= 90 ? 'ring-2 ring-red-400' : ''"><div class="flex justify-between gap-3"><div><p class="text-xs font-black uppercase tracking-widest text-teal-700">{{ hub.hub_type }}</p><h2 class="mt-1 text-xl font-bold">{{ hub.name }}</h2><p class="text-sm text-slate-500">{{ hub.code }}</p></div><span class="text-right text-2xl font-black" :class="hub.utilization_percentage >= 90 ? 'text-red-600' : 'text-slate-950'">{{ Number(hub.utilization_percentage).toFixed(1) }}%</span></div><div class="mt-6 flex justify-between text-sm font-semibold"><span>Stock</span><span>{{ hub.current_stock }} / {{ hub.capacity || 0 }}</span></div><div class="mt-2 h-3 overflow-hidden bg-slate-100"><div class="h-full transition-all" :class="barClass(hub.utilization_percentage)" :style="{ width: `${Math.min(100, Math.max(0, hub.utilization_percentage))}%` }" /></div><div class="mt-4 flex items-center justify-between text-sm text-slate-500"><span>{{ hub.active_orders_count }} active orders</span><button class="font-bold text-teal-700 hover:text-teal-900" @click="router.push(`/hubs/${hub.id}/inventory`)">Audit inventory</button></div></article></div><p v-if="!store.hubs.length" class="py-16 text-center text-slate-400">No hubs match these filters.</p></div></main>
+</template>

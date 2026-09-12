@@ -16,8 +16,8 @@ services:
 
   web:
     build:
-      context: ..
-      dockerfile: logistics-api/docker/nginx/Dockerfile
+      context: ../..
+      dockerfile: shared/backend/docker/nginx/Dockerfile
     depends_on: [app]
     ports:
       - "80:80"
