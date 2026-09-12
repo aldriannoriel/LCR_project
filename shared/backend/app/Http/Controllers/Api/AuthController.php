@@ -26,7 +26,7 @@ class AuthController extends Controller
             'middle_initial' => 'nullable|string|max:10',
             'sex' => 'required|string|in:male,female,other',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'phone_number' => 'required|string|max:30',
+            'phone_number' => 'required|digits:11',
             'birthdate' => 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             'password' => 'required|string|min:8|confirmed',
             'province' => 'required|string|max:255',

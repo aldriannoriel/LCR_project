@@ -301,7 +301,7 @@ const handleSubmit = async () => {
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">Phone <span class="text-rose-400">*</span></label>
                 <div class="relative mt-1.5">
                   <Phone class="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <input v-model="form.phone_number" type="tel" required placeholder="0917-xxx-xxxx" class="w-full rounded-lg border border-slate-700 bg-slate-800/80 pl-9 pr-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                  <input v-model="form.phone_number" type="tel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" required placeholder="09171234567" @input="form.phone_number = form.phone_number.replace(/\D/g, '').slice(0, 11)" class="w-full rounded-lg border border-slate-700 bg-slate-800/80 pl-9 pr-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500" />
                 </div>
                 <p v-if="serverErrors.phone_number" class="mt-1 text-xs text-rose-400">{{ serverErrors.phone_number[0] }}</p>
               </div>

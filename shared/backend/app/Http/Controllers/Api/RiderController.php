@@ -253,7 +253,7 @@ class RiderController extends Controller
             'license_number' => ['nullable', 'string'],
             'status' => ['nullable', 'in:available,on_delivery,off_duty,suspended'],
             'application_status' => ['nullable', 'in:pending_review,approved,rejected'],
-            'phone_number' => ['nullable', 'string'],
+            'phone_number' => ['nullable', 'digits:11'],
         ]);
     }
 }

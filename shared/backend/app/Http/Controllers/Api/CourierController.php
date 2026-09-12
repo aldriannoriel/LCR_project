@@ -501,7 +501,7 @@ class CourierController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'phone_number' => 'required|string|max:30',
+            'phone_number' => 'required|digits:11',
         ]);
 
         $user->update([
