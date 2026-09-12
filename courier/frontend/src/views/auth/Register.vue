@@ -485,7 +485,7 @@ const handleSubmit = async () => {
                 <div class="mt-1.5 rounded-lg border-2 border-dashed border-slate-700 bg-slate-800/40 p-4 text-center hover:border-teal-500/60 transition">
                   <input type="file" accept="image/jpeg,image/png,application/pdf" class="hidden" id="permit-document-input" @change="handlePermitFileChange" />
                   <label for="permit-document-input" class="cursor-pointer flex flex-col items-center">
-                    <Upload class="h-8 w-8 text-slate-400" />
+                    <Upload class="h-8 w-8 text-teal-400" />
                     <span class="mt-2 text-xs font-medium text-slate-200">{{ businessPermitFile ? businessPermitFile.name : 'Click to upload permit' }}</span>
                     <span class="text-[10px] text-slate-400 mt-0.5">DTI, SEC, or Mayor's Permit</span>
                   </label>
