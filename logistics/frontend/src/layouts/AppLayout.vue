@@ -7,7 +7,6 @@ import {
   Activity,
   ArrowRightLeft,
   BarChart3,
-  Bike,
   Boxes,
   ChevronDown,
   ClipboardList,
@@ -42,7 +41,6 @@ const navigation = computed(() => [
   { label: 'Reports', to: '/reports', icon: BarChart3, roles: ['super_admin', 'hub_manager', 'admin'] },
   { label: 'Pickup Requests', to: '/pickups', icon: PackagePlus },
   { label: 'Messages', to: '/chat', icon: MessageSquare },
-  { label: 'Courier', to: '/courier', icon: Bike, highlight: true },
   { label: 'Settings', to: '/settings', icon: Settings },
 ].filter((item) => !item.roles || item.roles.some((allowedRole) => auth.hasRole(allowedRole))));
 

@@ -16,6 +16,18 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         async login(credentials) {
             const response = await axios.post('/login', credentials);
+            if (response.data.user?.rider) {
+                try {
+                    await axios.post('/logout', {}, {
+                        headers: { Authorization: `Bearer ${response.data.access_token}` },
+                    });
+                } catch (e) {}
+
+                const error = new Error('Courier accounts must use the courier application.');
+                error.code = 'COURIER_APP_REQUIRED';
+                throw error;
+            }
+
             this.token = response.data.access_token;
             this.user = response.data.user;
             this.roles = this.user.roles?.map((role) => role.name.toLowerCase().replaceAll(' ', '_')) || [];
@@ -24,8 +36,7 @@ export const useAuthStore = defineStore('auth', {
             localStorage.setItem('user_roles', JSON.stringify(this.roles));
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
 
-            // Return redirect path based on user type
-            return this.user?.rider ? '/courier' : '/dashboard';
+            return '/dashboard';
         },
         async logout() {
             if (this.token) {
