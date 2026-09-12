@@ -58,6 +58,30 @@ textarea {
   border: 1px solid var(--border);
 }
 
+.registration-page input,
+.registration-page select,
+.registration-page textarea {
+  background-color: #ffffff !important;
+  border-color: #cbdfe1 !important;
+  color: #062f3f !important;
+}
+
+.registration-page input::placeholder,
+.registration-page textarea::placeholder {
+  color: #789096 !important;
+}
+
+.registration-page input:focus,
+.registration-page select:focus,
+.registration-page textarea:focus {
+  border-color: #078f96 !important;
+  box-shadow: 0 0 0 1px #078f96 !important;
+}
+
+.registration-page label {
+  color: #526b72 !important;
+}
+
 .app-theme {
   background:
     radial-gradient(circle at 8% 0%, rgba(7, 143, 150, 0.08), transparent 22rem),

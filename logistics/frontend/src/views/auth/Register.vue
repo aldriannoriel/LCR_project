@@ -214,7 +214,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_24%),linear-gradient(180deg,#f3f4f6_0%,#eef2ff_100%)] px-4 py-10 text-slate-900 antialiased selection:bg-blue-500 selection:text-white">
+  <div class="registration-page min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(7,143,150,0.12),_transparent_24%),linear-gradient(180deg,#ffffff_0%,#f2fbfb_100%)] px-4 py-10 text-slate-900 antialiased selection:bg-teal-500 selection:text-white">
     <div class="mx-auto max-w-3xl">
       <div class="mb-8 text-center">
         <div class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-blue-700">
