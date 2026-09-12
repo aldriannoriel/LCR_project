@@ -20,7 +20,7 @@ defineEmits(['update:modelValue']);
       @click="$emit('update:modelValue', 'logistics')"
     >
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-700">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500">
           <Package class="h-6 w-6 text-white" />
         </div>
         <div>
