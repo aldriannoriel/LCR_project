@@ -20,6 +20,11 @@ use App\Models\Hub;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/registration/hubs', fn () => response()->json(Hub::whereIn('code', [
+    'HUB-LUZ-CTR', 'HUB-LUZ-NL', 'HUB-LUZ-SL', 'HUB-LUZ-NCR',
+    'HUB-VIS-GW', 'HUB-VIS-CEB', 'HUB-VIS-ILO', 'HUB-VIS-BCD',
+    'HUB-MIN-CG', 'HUB-MIN-DVO', 'HUB-MIN-CDO', 'HUB-MIN-ZAM',
+])->orderBy('name')->get(['id', 'name', 'code'])));
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

@@ -79,7 +79,7 @@ onMounted(async () => {
   // Load hubs for courier
   loadingHubs.value = true;
   try {
-    const res = await axios.get('/hubs');
+    const res = await axios.get('/registration/hubs');
     hubs.value = res.data.data || res.data || [];
   } catch {}
   loadingHubs.value = false;
