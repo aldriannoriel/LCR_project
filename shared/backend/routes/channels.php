@@ -21,3 +21,20 @@ Broadcast::channel('rider.{riderId}.pickups', function ($user, $riderId) {
 Broadcast::channel('rider.{riderId}.deliveries', function ($user, $riderId) {
     return (int) optional($user->rider)->id === (int) $riderId;
 });
+
+Broadcast::channel('alona.parcels', function ($user) {
+    return $user->hasAnyRole(['Admin', 'Super Admin', 'Logistics Admin', 'admin', 'super_admin', 'logistics_admin']);
+});
+
+Broadcast::channel('alona.manifests', function ($user) {
+    return $user->hasAnyRole(['Admin', 'Super Admin', 'Logistics Admin', 'admin', 'super_admin', 'logistics_admin']);
+});
+
+Broadcast::channel('alona.parcel.{parcelId}', function ($user, $parcelId) {
+    $parcel = \App\Models\AlonaParcel::find($parcelId);
+    return $parcel && (
+        $user->hasAnyRole(['Admin', 'Super Admin', 'Logistics Admin', 'admin', 'super_admin', 'logistics_admin'])
+        || (int) $parcel->seller_id === (int) $user->id
+        || (int) optional($user->rider)->id === (int) $parcel->rider_id
+    );
+});

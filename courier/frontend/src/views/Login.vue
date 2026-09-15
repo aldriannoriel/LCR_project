@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
-import { Lock, Mail, ShieldAlert, UserPlus, ArrowRight, Building2, Bike } from 'lucide-vue-next';
+import { Lock, Mail, ShieldAlert, ArrowRight, Building2, Bike } from 'lucide-vue-next';
 import logo from '../assets/alona2.png';
 
 const email = ref('');
@@ -151,15 +151,11 @@ const quickLogin = (account) => {
         </button>
       </form>
 
-      <div class="mt-6 border-t border-slate-200 pt-6 text-center">
-        <p class="text-xs text-slate-500">
-          New to Logistics OS?
-          <router-link to="/register" class="ml-1 inline-flex items-center gap-1 font-bold text-blue-600 hover:text-blue-500">
-            <UserPlus class="h-3.5 w-3.5" />
-            Register your account
-          </router-link>
-        </p>
-      </div>
+      <p class="mt-6 text-center text-sm text-slate-500">
+        Need an account?
+        <router-link to="/register" class="font-bold text-blue-600 hover:underline">Register as a rider</router-link>
+      </p>
+
     </div>
   </div>
 </template>

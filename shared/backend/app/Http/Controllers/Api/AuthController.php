@@ -161,7 +161,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        if ($user->approval_status !== 'approved') {
+        if ($user->approval_status !== 'approved' || ($user->rider && $user->rider->application_status !== 'approved')) {
             return response()->json([
                 'message' => 'Your registration is currently pending administrator approval. Please check your email for updates.',
                 'approval_status' => $user->approval_status,

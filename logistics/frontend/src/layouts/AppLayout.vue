@@ -5,22 +5,16 @@ import { useAuthStore } from '../stores/auth';
 import { axios } from '../lib/echo';
 import {
   Activity,
-  ArrowRightLeft,
-  BarChart3,
-  Boxes,
   ChevronDown,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
   MessageSquare,
-  PackagePlus,
-  PackageSearch,
-  ScanLine,
-  Settings,
-  ShieldCheck,
-  Truck,
+  BarChart3,
+  ClipboardCheck,
+  AlertTriangle,
   Users,
+  Settings,
   X
 } from 'lucide-vue-next';
 
@@ -31,18 +25,15 @@ const mobileOpen = ref(false);
 const quickOpen = ref(false);
 
 const navigation = computed(() => [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Incoming Parcels', to: '/orders', icon: PackageSearch },
-  { label: 'Sort Parcels', to: '/sorting', icon: ScanLine },
-  { label: 'Riders', to: '/fleet', icon: Truck },
-  { label: 'Hub Stock', to: '/hubs', icon: Boxes },
-  { label: 'Returns', to: '/returns', icon: ArrowRightLeft },
-  { label: 'Approve Users', to: '/admin/approvals', icon: ShieldCheck, roles: ['super_admin', 'hub_manager', 'admin'] },
-  { label: 'Reports', to: '/reports', icon: BarChart3, roles: ['super_admin', 'hub_manager', 'admin'] },
-  { label: 'Pickup Requests', to: '/pickups', icon: PackagePlus },
+  { label: 'Alona Logistics', to: '/alona/logistics', icon: LayoutDashboard },
+  { label: 'Rider Management', to: '/fleet', icon: Users },
+  { label: 'Staff Approvals', to: '/admin/approvals', icon: ClipboardCheck },
+  { label: 'Pickup Requests', to: '/pickups', icon: ClipboardCheck },
+  { label: 'Reports', to: '/reports', icon: BarChart3 },
+  { label: 'Disputes', to: '/disputes', icon: AlertTriangle },
   { label: 'Messages', to: '/chat', icon: MessageSquare },
   { label: 'Settings', to: '/settings', icon: Settings },
-].filter((item) => !item.roles || item.roles.some((allowedRole) => auth.hasRole(allowedRole))));
+]);
 
 const userEmail = computed(() => auth.user?.email || 'Operations user');
 const role = computed(() => auth.userRoles[0] || 'Dispatcher');
@@ -109,17 +100,8 @@ onMounted(async () => {
           <span class="text-blue-100">+</span>
         </button>
         <div v-if="quickOpen" class="absolute left-4 right-4 top-16 z-10 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/orders?focus=scanner')">
-            <ScanLine class="h-4 w-4 text-blue-600" />Scan inbound AWB
-          </button>
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/transfers?new=1')">
-            <ArrowRightLeft class="h-4 w-4 text-amber-600" />Create transfer request
-          </button>
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/fleet?assign=1')">
-            <Users class="h-4 w-4 text-indigo-600" />Assign rider
-          </button>
-          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/returns')">
-            <ClipboardList class="h-4 w-4 text-rose-600" />Process return
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/alona/logistics')">
+            <LayoutDashboard class="h-4 w-4 text-teal-600" />Open Alona control room
           </button>
         </div>
       </div>

@@ -5,22 +5,13 @@ import { useAuthStore } from '../stores/auth';
 import { axios } from '../lib/echo';
 import {
   Activity,
-  ArrowRightLeft,
-  BarChart3,
   Bike,
-  Boxes,
   ChevronDown,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
-  MessageSquare,
-  PackagePlus,
   PackageSearch,
-  ScanLine,
-  Settings,
   ShieldCheck,
-  Truck,
   Users,
   X
 } from 'lucide-vue-next';
@@ -32,19 +23,13 @@ const mobileOpen = ref(false);
 const quickOpen = ref(false);
 
 const navigation = computed(() => [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Incoming Parcels', to: '/orders', icon: PackageSearch },
-  { label: 'Sort Parcels', to: '/sorting', icon: ScanLine },
-  { label: 'Riders', to: '/fleet', icon: Truck },
-  { label: 'Hub Stock', to: '/hubs', icon: Boxes },
-  { label: 'Returns', to: '/returns', icon: ArrowRightLeft },
-  { label: 'Approve Users', to: '/admin/approvals', icon: ShieldCheck, roles: ['super_admin', 'hub_manager', 'admin'] },
-  { label: 'Reports', to: '/reports', icon: BarChart3, roles: ['super_admin', 'hub_manager', 'admin'] },
-  { label: 'Pickup Requests', to: '/pickups', icon: PackagePlus },
-  { label: 'Messages', to: '/chat', icon: MessageSquare },
-  { label: 'Courier', to: '/courier', icon: Bike, highlight: true },
-  { label: 'Settings', to: '/settings', icon: Settings },
-].filter((item) => !item.roles || item.roles.some((allowedRole) => auth.hasRole(allowedRole))));
+  { label: 'Courier Dashboard', to: '/courier', icon: LayoutDashboard, highlight: true },
+  { label: 'Bulk Received', to: '/courier?tab=overview', icon: PackageSearch },
+  { label: 'Sort & Assign', to: '/courier?tab=overview&mode=assign', icon: PackageSearch },
+  { label: 'Delivery Monitor', to: '/courier?tab=overview&mode=monitor', icon: Bike },
+  { label: 'Riders', to: '/courier?tab=riders', icon: Users },
+  { label: 'Exceptions & Returns', to: '/courier?tab=exceptions', icon: ShieldCheck },
+]);
 
 const userEmail = computed(() => auth.user?.email || 'Operations user');
 const role = computed(() => auth.userRoles[0] || 'Dispatcher');

@@ -6,9 +6,12 @@ use App\Events\OrderRoutedToBin;
 use App\Http\Controllers\Controller;
 use App\Models\Bin;
 use App\Models\Order;
+use App\Models\OrderStatusHistory;
+use App\Models\BinAssignment;
 use App\Services\BinAssignmentService;
 use App\Services\RoutingEngineService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SortingController extends Controller
@@ -56,6 +59,57 @@ class SortingController extends Controller
         }
 
         return response()->json(['message' => 'Order routed successfully.', 'order' => $order->load('hub'), 'route' => $route, 'assignment' => $assignment]);
+    }
+
+    public function sortScan(Request $request)
+    {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
+        $validated = $request->validate([
+            'awb_number' => ['required', 'string'],
+            'bin_id' => ['required', 'integer', 'exists:bins,id'],
+        ]);
+
+        $result = DB::transaction(function () use ($validated, $request) {
+            $order = Order::where('awb_number', $validated['awb_number'])->lockForUpdate()->firstOrFail();
+            $bin = Bin::lockForUpdate()->findOrFail($validated['bin_id']);
+            $currentHubId = $order->current_hub_id ?: $order->hub_id;
+
+            abort_if($bin->hub_id !== $currentHubId, 422, 'The selected bin is not at the parcel\'s current hub.');
+            abort_if($bin->status !== 'active' || $bin->current_count >= $bin->capacity, 422, 'The selected bin is not available.');
+            abort_if(! in_array($order->status, ['received', 'in_transit']), 422, 'This parcel is not ready for sorting.');
+
+            $assignment = BinAssignment::firstOrCreate([
+                'bin_id' => $bin->id,
+                'order_id' => $order->id,
+            ], [
+                'scanned_by_user_id' => $request->user()->id,
+                'assigned_at' => now(),
+            ]);
+
+            if ($assignment->wasRecentlyCreated) {
+                $bin->increment('current_count');
+                $bin->refresh();
+                if ($bin->current_count >= $bin->capacity) $bin->update(['status' => 'full']);
+            }
+
+            $order->update(['status' => 'sorted']);
+            OrderStatusHistory::create([
+                'order_id' => $order->id,
+                'status' => 'sorted',
+                'location_hub_id' => $currentHubId,
+                'performed_by_user_id' => $request->user()->id,
+                'notes' => 'Parcel placed in bin '.$bin->bin_code.'.',
+            ]);
+
+            return [$order, $assignment->load('bin.targetHub')];
+        });
+
+        return response()->json([
+            'message' => 'Parcel sorted into bin.',
+            'order' => $result[0]->fresh()->load(['hub', 'currentHub', 'statusHistories']),
+            'assignment' => $result[1],
+        ]);
     }
 
     public function bins(Request $request)

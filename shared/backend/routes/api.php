@@ -16,6 +16,13 @@ use App\Http\Controllers\Api\PickupRequestController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\CourierController;
+use App\Http\Controllers\Api\Alona\AlonaDashboardController;
+use App\Http\Controllers\Api\Alona\AlonaAgencyController;
+use App\Http\Controllers\Api\Alona\AlonaManifestController;
+use App\Http\Controllers\Api\Alona\AlonaParcelController;
+use App\Http\Controllers\Api\Alona\AlonaRiderController;
+use App\Http\Controllers\Api\Alona\AlonaZoneController;
+use App\Http\Controllers\Api\Alona\AlonaDisputeController;
 use App\Models\Hub;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,6 +37,39 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', function (Request $request) {
         return $request->user()->load('roles', 'hub', 'rider');
+    });
+
+    // Alona Logistics Management
+    Route::prefix('alona')->group(function () {
+        Route::get('/dashboard', AlonaDashboardController::class);
+        Route::apiResource('agencies', AlonaAgencyController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('riders', AlonaRiderController::class);
+        Route::patch('/riders/{rider}/status', [AlonaRiderController::class, 'status']);
+        Route::post('/riders/{rider}/approve', [AlonaRiderController::class, 'approve']);
+        Route::post('/riders/{rider}/reject', [AlonaRiderController::class, 'reject']);
+        Route::post('/riders/{rider}/documents', [AlonaRiderController::class, 'uploadDocument']);
+        Route::patch('/riders/{rider}/documents/{document}/verify', [AlonaRiderController::class, 'verifyDocument']);
+
+        Route::apiResource('zones', AlonaZoneController::class);
+        Route::post('/zones/{zone}/assign-default', [AlonaZoneController::class, 'assignDefault']);
+
+        Route::get('/manifests', [AlonaManifestController::class, 'index']);
+        Route::get('/manifests/{manifest}', [AlonaManifestController::class, 'show']);
+        Route::post('/manifests/{manifest}/approve', [AlonaManifestController::class, 'approve']);
+        Route::post('/manifests/{manifest}/reject', [AlonaManifestController::class, 'reject']);
+        Route::post('/manifests/bulk-approve', [AlonaManifestController::class, 'bulkApprove']);
+
+        Route::get('/parcels', [AlonaParcelController::class, 'index']);
+        Route::get('/parcels/{parcel}', [AlonaParcelController::class, 'show']);
+        Route::post('/parcels/{parcel}/assign', [AlonaParcelController::class, 'assign']);
+        Route::post('/parcels/{parcel}/status', [AlonaParcelController::class, 'changeStatus']);
+        Route::get('/parcels/{parcel}/audit', [AlonaParcelController::class, 'audit']);
+
+        Route::get('/disputes', [AlonaDisputeController::class, 'index']);
+        Route::post('/disputes', [AlonaDisputeController::class, 'store']);
+        Route::get('/disputes/{dispute}', [AlonaDisputeController::class, 'show']);
+        Route::patch('/disputes/{dispute}', [AlonaDisputeController::class, 'update']);
+        Route::post('/disputes/{dispute}/messages', [AlonaDisputeController::class, 'message']);
     });
 
     // Account & Profile Management
@@ -70,9 +110,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/archipelagos', fn () => response()->json(\App\Models\Archipelago::orderBy('name')->get(['id', 'name', 'code'])));
     Route::get('/coverage-areas', fn () => response()->json(\App\Models\CoverageArea::with('hub')->orderBy('province')->orderBy('city_municipality')->get()));
     Route::post('/orders/intake', [OrderController::class, 'intake']);
+    Route::post('/orders/receive-bulk', [OrderController::class, 'receiveBulk']);
+    Route::get('/orders/scan/{awbNumber}', [OrderController::class, 'scanLookup']);
+    Route::post('/orders/transfer-scan', [OrderController::class, 'transferScan']);
+    Route::post('/orders/handover-to-rider', [OrderController::class, 'handoverToRider']);
+    Route::patch('/orders/{order}/operational-status', [OrderController::class, 'updateOperationalStatus']);
     Route::post('/orders/confirm-arrivals', [OrderController::class, 'confirmArrivals']);
     Route::post('/orders/{order}/override', [OrderController::class, 'override']);
     Route::post('/orders/route-and-bin', [SortingController::class, 'routeAndBin']);
+    Route::post('/orders/sort-scan', [SortingController::class, 'sortScan']);
     Route::post('/orders/auto-sort', [SortingController::class, 'autoSort']);
     Route::get('/bins', [SortingController::class, 'bins']);
     Route::get('/manifests/ready', [ManifestController::class, 'ready']);
@@ -82,6 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('riders', RiderController::class)->only(['index', 'store', 'update']);
     Route::patch('/riders/{rider}/status', [RiderController::class, 'status']);
     Route::patch('/riders/{rider}/toggle-active', [RiderController::class, 'toggleActive']);
+    Route::put('/riders/{rider}/hub', [RiderController::class, 'updateHub']);
     Route::post('/riders/{rider}/approve-application', [RiderController::class, 'approveApplication']);
     Route::post('/riders/{rider}/reject-application', [RiderController::class, 'rejectApplication']);
     Route::get('/riders/{rider}/details', [RiderController::class, 'details']);

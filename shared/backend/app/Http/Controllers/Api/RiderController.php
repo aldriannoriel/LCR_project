@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\NewDeliveryAssigned;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\RiderHub;
 use App\Models\Rider;
 use App\Models\RiderPerformance;
 use App\Models\User;
@@ -137,6 +138,10 @@ class RiderController extends Controller
             'status' => 'available',
             'rejection_reason' => null,
         ]);
+        $rider->user->update([
+            'approval_status' => 'approved',
+            'rejection_reason' => null,
+        ]);
 
         return response()->json([
             'message' => "Rider {$rider->user->name}'s application has been approved.",
@@ -157,6 +162,10 @@ class RiderController extends Controller
             'status' => 'suspended',
             'rejection_reason' => $validated['reason'],
         ]);
+        $rider->user->update([
+            'approval_status' => 'rejected',
+            'rejection_reason' => $validated['reason'],
+        ]);
 
         return response()->json([
             'message' => "Rider {$rider->user->name}'s application has been disapproved.",
@@ -174,6 +183,23 @@ class RiderController extends Controller
         return response()->json([
             'message' => $newStatus === 'available' ? 'Rider account activated.' : 'Rider account deactivated / suspended.',
             'rider' => $rider->fresh()->load(['user', 'hub', 'performance']),
+        ]);
+    }
+
+    public function updateHub(Request $request, Rider $rider)
+    {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+
+        $validated = $request->validate([
+            'hub_id' => ['required', 'integer', 'exists:hubs,id'],
+        ]);
+
+        $rider->update(['hub_id' => $validated['hub_id']]);
+        $rider->user->update(['hub_id' => $validated['hub_id']]);
+
+        return response()->json([
+            'message' => 'Rider hub assignment updated.',
+            'rider' => $rider->fresh()->load(['hub', 'coverageArea', 'user', 'performance']),
         ]);
     }
 
@@ -212,6 +238,11 @@ class RiderController extends Controller
             });
 
             abort_if($outsideArea, 422, "Parcel {$outsideArea->awb_number} is outside this rider's assigned delivery area.");
+        }
+
+        if ($rider->hub_id) {
+            $outsideArea = $ordersToAssign->first(fn (Order $order) => ($order->current_hub_id ?: $order->hub_id) !== $rider->hub_id);
+            abort_if($outsideArea, 422, "Parcel {$outsideArea->awb_number} is outside this rider's assigned hubs.");
         }
 
         DB::transaction(function () use ($data, $rider) {

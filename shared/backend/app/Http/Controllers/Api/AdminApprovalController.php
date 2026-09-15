@@ -55,6 +55,14 @@ class AdminApprovalController extends Controller
             'rejection_reason' => null,
         ]);
 
+        if ($user->rider) {
+            $user->rider->update([
+                'application_status' => 'approved',
+                'status' => 'available',
+                'rejection_reason' => null,
+            ]);
+        }
+
         try {
             Mail::to($user->email)->send(new AccountApprovedMail($user));
         } catch (\Throwable $e) {
@@ -79,6 +87,14 @@ class AdminApprovalController extends Controller
             'approval_status' => 'rejected',
             'rejection_reason' => $validated['reason'],
         ]);
+
+        if ($user->rider) {
+            $user->rider->update([
+                'application_status' => 'rejected',
+                'status' => 'suspended',
+                'rejection_reason' => $validated['reason'],
+            ]);
+        }
 
         try {
             Mail::to($user->email)->send(new AccountRejectedMail($user, $validated['reason']));

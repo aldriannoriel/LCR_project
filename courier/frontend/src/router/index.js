@@ -1,14 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
+import CourierAdminDashboard from '../views/CourierAdminDashboard.vue';
 import Register from '../views/auth/Register.vue';
-import RegistrationSubmitted from '../views/auth/RegistrationSubmitted.vue';
-import CourierLayout from '../courier/layouts/CourierLayout.vue';
-import CourierDashboard from '../courier/views/Dashboard.vue';
-import CourierPickups from '../courier/views/Pickups.vue';
-import CourierDeliveries from '../courier/views/Deliveries.vue';
-import CourierEarnings from '../courier/views/Earnings.vue';
-import CourierHistory from '../courier/views/History.vue';
-import CourierSettings from '../courier/views/Settings.vue';
 
 const routes = [
   {
@@ -22,26 +15,14 @@ const routes = [
     component: Register,
   },
   {
-    path: '/registration-submitted',
-    name: 'RegistrationSubmitted',
-    component: RegistrationSubmitted,
-  },
-  {
     path: '/',
-    redirect: '/courier',
+    redirect: '/login',
   },
   {
     path: '/courier',
-    component: CourierLayout,
-    meta: { requiresAuth: true },
-    children: [
-      { path: '', name: 'CourierDashboard', component: CourierDashboard },
-      { path: 'pickups', name: 'CourierPickups', component: CourierPickups },
-      { path: 'deliveries', name: 'CourierDeliveries', component: CourierDeliveries },
-      { path: 'earnings', name: 'CourierEarnings', component: CourierEarnings },
-      { path: 'history', name: 'CourierHistory', component: CourierHistory },
-      { path: 'settings', name: 'CourierSettings', component: CourierSettings },
-    ],
+    name: 'CourierAdmin',
+    component: CourierAdminDashboard,
+    meta: { requiresAuth: true, roles: ['courier_admin', 'admin', 'super_admin', 'hub_manager', 'Courier Admin', 'Admin', 'Super Admin', 'Hub Manager'] },
   },
 ];
 

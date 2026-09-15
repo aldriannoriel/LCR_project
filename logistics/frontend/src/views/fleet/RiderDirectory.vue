@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useRiderStore } from '../../stores/rider';
 import RiderDetailDrawer from '../../components/fleet/RiderDetailDrawer.vue';
 import AssignOrdersModal from '../../components/fleet/AssignOrdersModal.vue';
+import RiderLocationAssignmentModal from '../../components/fleet/RiderLocationAssignmentModal.vue';
 import { axios } from '../../lib/echo';
 import {
   Truck,
@@ -18,6 +19,7 @@ import {
   X,
   Search,
   RefreshCw,
+  MapPinned,
   ExternalLink,
   Clock
 } from 'lucide-vue-next';
@@ -28,7 +30,6 @@ const route = useRoute();
 const activeTab = ref('fleet'); // 'fleet' or 'applications'
 const filters = reactive({
   search: '',
-  archipelago_id: '',
   hub_id: '',
   status: '',
   application_status: 'approved',
@@ -37,11 +38,11 @@ const filters = reactive({
   per_page: 10,
 });
 
-const archipelagos = ref([]);
 const hubs = ref([]);
 const coverageAreas = ref([]);
 const detailRider = ref(null);
 const assignmentRider = ref(null);
+const coverageRider = ref(null);
 const pending = ref(new Set());
 let timer;
 
@@ -83,7 +84,6 @@ const load = () => {
   filters.application_status = activeTab.value === 'fleet' ? 'approved' : 'pending_review';
   store.fetchRiders({
     ...filters,
-    archipelago_id: filters.archipelago_id || undefined,
     hub_id: filters.hub_id || undefined,
     status: filters.status || undefined,
     application_status: filters.application_status,
@@ -143,6 +143,7 @@ const approveRiderApplication = async (rider) => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     actionMessage.value = res.data.message;
+    coverageRider.value = res.data.rider;
     load();
   } catch (err) {
     actionError.value = err.response?.data?.message || 'Approval failed.';
@@ -220,10 +221,18 @@ const submitNewRider = async () => {
 const reload = () => {
   detailRider.value = null;
   assignmentRider.value = null;
+  coverageRider.value = null;
   load();
 };
 
-watch([() => filters.archipelago_id, () => filters.hub_id, () => filters.status, () => filters.vehicle_type, activeTab], () => {
+const handleLocationsSaved = (updatedRider) => {
+  const rider = store.riders.data.find((item) => item.id === updatedRider.id);
+  if (rider) Object.assign(rider, updatedRider);
+  actionMessage.value = 'Rider delivery cities updated.';
+  load();
+};
+
+watch([() => filters.hub_id, () => filters.status, () => filters.vehicle_type, activeTab], () => {
   filters.page = 1;
   load();
 });
@@ -231,7 +240,6 @@ watch([() => filters.archipelago_id, () => filters.hub_id, () => filters.status,
 onMounted(async () => {
   store.auth();
   try {
-    archipelagos.value = (await axios.get('/archipelagos')).data;
     hubs.value = (await axios.get('/hubs')).data;
     coverageAreas.value = (await axios.get('/coverage-areas')).data;
     if (hubs.value.length) newRiderForm.value.hub_id = hubs.value[0].id;
@@ -274,7 +282,6 @@ onMounted(async () => {
       <section class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.04)]">
         <div class="grid gap-3 border-b border-slate-200 bg-slate-50 p-5 md:grid-cols-2 lg:grid-cols-5">
           <input v-model="filters.search" @input="search" placeholder="Search rider, phone, or plate" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
-          <select v-model="filters.archipelago_id" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500"><option value="">All archipelagos</option><option v-for="item in archipelagos" :key="item.id" :value="item.id">{{ item.name }}</option></select>
           <select v-model="filters.hub_id" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500"><option value="">All hubs</option><option v-for="hub in hubs" :key="hub.id" :value="hub.id">{{ hub.name }}</option></select>
           <select v-model="filters.status" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500"><option value="">All duty status</option><option v-for="status in ['available','on_delivery','off_duty','suspended']" :key="status" :value="status">{{ label(status) }}</option></select>
           <select v-model="filters.vehicle_type" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500"><option value="">All vehicles</option><option v-for="type in ['motorcycle','tricycle','van','truck']" :key="type">{{ type }}</option></select>
@@ -297,7 +304,7 @@ onMounted(async () => {
 
               <tr v-for="rider in store.riders.data" v-else :key="rider.id" class="transition hover:bg-slate-50/80">
                 <td class="px-5 py-4"><div class="font-bold text-slate-900">{{ rider.user?.name }}</div><div class="mt-0.5 text-xs text-slate-500">{{ rider.phone_number || rider.user?.email }}</div></td>
-                <td class="px-5 py-4 text-slate-600"><span class="font-medium">{{ rider.hub?.name || 'Unassigned' }}</span></td>
+                <td class="px-5 py-4 text-slate-600"><span class="font-medium">{{ rider.hub?.name || 'Unassigned' }}</span><div class="mt-1 text-xs text-slate-500">Single assigned hub</div></td>
                 <td class="px-5 py-4 capitalize"><div class="font-semibold text-slate-800">{{ rider.vehicle_type }}</div><div class="font-mono text-xs text-slate-500">{{ rider.plate_number || 'No plate' }}</div></td>
                 <td class="px-5 py-4"><div class="text-xs text-slate-700">License: <strong>{{ rider.license_number || 'On File' }}</strong></div><div class="mt-1 flex items-center gap-1.5"><span v-if="rider.license_doc_path" class="rounded-full border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">License doc</span><span v-if="rider.vehicle_or_cr_path" class="rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">OR/CR</span></div></td>
                 <td class="px-5 py-4"><button class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold capitalize transition disabled:opacity-60" :class="statusClass[rider.status]" :disabled="pending.has(rider.id) || rider.status === 'suspended'" @click="toggleDuty(rider)"><span class="h-2 w-2 rounded-full bg-current" /> {{ label(rider.status) }}</button></td>
@@ -310,6 +317,7 @@ onMounted(async () => {
 
                   <template v-else>
                     <button @click="toggleActiveStatus(rider)" class="inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold shadow-sm transition" :class="rider.status === 'suspended' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100'"><Power class="h-3 w-3" /> {{ rider.status === 'suspended' ? 'Activate' : 'Deactivate' }}</button>
+                    <button @click="coverageRider = rider" class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:underline"><MapPinned class="h-3.5 w-3.5" /> Hubs</button>
                     <button class="text-xs font-semibold text-blue-700 hover:underline" @click="detailRider = rider">Details</button>
                     <button v-if="rider.status === 'available'" class="text-xs font-semibold text-indigo-700 hover:underline" @click="assignmentRider = rider">Assign Deliveries</button>
                   </template>
@@ -334,6 +342,8 @@ onMounted(async () => {
     <div v-if="detailRider" class="fixed inset-0 z-20 bg-slate-950/30 backdrop-blur-sm" @click.self="detailRider = null"><RiderDetailDrawer :rider="detailRider" @close="detailRider = null" /></div>
 
     <AssignOrdersModal v-if="assignmentRider" :rider="assignmentRider" @close="assignmentRider = null" @assigned="reload" />
+
+    <RiderLocationAssignmentModal v-if="coverageRider" :rider="coverageRider" @close="coverageRider = null" @saved="handleLocationsSaved" />
 
     <div v-if="showCreateRiderModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" @click.self="showCreateRiderModal = false">
       <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.22)]">

@@ -6,14 +6,13 @@ import { philippineAddressService } from '../../services/philippineAddressServic
 import {
   User, Mail, Phone, Lock, Calendar, MapPin, Building,
   FileText, Upload, CheckCircle2, AlertCircle, ArrowRight,
-  ShieldCheck, Eye, EyeOff, Loader2, Bike, Package, ChevronDown
+  ShieldCheck, Eye, EyeOff, Loader2, Bike, ChevronDown
 } from 'lucide-vue-next';
-import AccountTypeSelector from '../../components/auth/AccountTypeSelector.vue';
 
 const router = useRouter();
 
 // Account type selection
-const accountType = ref('');
+const accountType = ref('courier');
 
 // Form data
 const form = ref({
@@ -222,15 +221,7 @@ const handleSubmit = async () => {
           Join Logistics OS
         </div>
         <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl text-slate-900">Create Your Account</h1>
-        <p class="mt-2 text-sm text-slate-500">All registrations undergo verification before access is granted.</p>
-      </div>
-
-      <AccountTypeSelector v-model="accountType" />
-
-      <!-- No type selected message -->
-      <div v-if="!accountType" class="rounded-2xl border border-slate-700 bg-slate-900/80 p-8 text-center">
-        <Package class="mx-auto h-12 w-12 text-slate-600" />
-        <p class="mt-3 font-bold text-slate-400">Select an account type above to continue</p>
+        <p class="mt-2 text-sm text-slate-500">Rider applications are reviewed by the Logistics / Sorting Center before access is granted.</p>
       </div>
 
       <!-- Main Form Card -->
@@ -502,7 +493,7 @@ const handleSubmit = async () => {
           <div class="pt-4">
             <button type="submit" :disabled="submitting || isUnderage" class="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold uppercase tracking-wider shadow-lg transition disabled:opacity-50" :class="isCourier ? 'bg-blue-500 text-white shadow-blue-500/20 hover:bg-blue-400' : 'bg-teal-500 text-slate-950 shadow-teal-500/20 hover:bg-teal-400'">
               <Loader2 v-if="submitting" class="h-4 w-4 animate-spin" />
-              <span>{{ submitting ? 'Submitting...' : `Register as ${isCourier ? 'Courier' : 'Logistics/Seller'}` }}</span>
+              <span>{{ submitting ? 'Submitting...' : 'Register as Rider' }}</span>
               <ArrowRight v-if="!submitting" class="h-4 w-4" />
             </button>
             <p class="mt-4 text-center text-xs text-slate-400">

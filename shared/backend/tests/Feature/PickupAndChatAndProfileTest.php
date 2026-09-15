@@ -107,6 +107,19 @@ class PickupAndChatAndProfileTest extends TestCase
             'application_status' => 'approved',
             'status' => 'available',
         ]);
+        $this->assertDatabaseHas('users', [
+            'id' => $riderUser->id,
+            'approval_status' => 'approved',
+        ]);
+
+        $this->actingAs($admin, 'sanctum')->putJson("/api/riders/{$rider->id}/hub", [
+            'hub_id' => $hub->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('riders', [
+            'id' => $rider->id,
+            'hub_id' => $hub->id,
+        ]);
 
         // Toggle active (deactivate)
         $this->actingAs($admin, 'sanctum')->patchJson("/api/riders/{$rider->id}/toggle-active")

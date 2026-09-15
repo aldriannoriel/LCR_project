@@ -8,6 +8,14 @@ abstract class Controller
 {
     protected function requireAnyRole(Request $request, array $roles): void
     {
-        abort_unless($request->user()?->hasAnyRole($roles), 403, 'You are not authorized to perform this action.');
+        $user = $request->user();
+        $authorized = $user?->hasAnyRole($roles);
+
+        // Courier Admin uses the shared operations APIs without becoming a rider.
+        if (! $authorized && in_array('Admin', $roles, true)) {
+            $authorized = $user?->hasRole('Courier Admin');
+        }
+
+        abort_unless($authorized, 403, 'You are not authorized to perform this action.');
     }
 }

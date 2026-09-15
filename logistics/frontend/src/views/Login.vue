@@ -2,14 +2,16 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
-import { Lock, Mail, ShieldAlert, UserPlus, ArrowRight, Building2, Bike } from 'lucide-vue-next';
+import { Lock, Mail, ShieldAlert, ArrowRight, Building2, Bike } from 'lucide-vue-next';
 import logo from '../assets/alona2.png';
 
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
 const isPendingApproval = ref(false);
+const isApiUnavailable = ref(false);
 const loading = ref(false);
+const isDev = import.meta.env.DEV;
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -42,6 +44,7 @@ const demoAccounts = [
 const handleLogin = async () => {
   errorMessage.value = '';
   isPendingApproval.value = false;
+  isApiUnavailable.value = false;
   loading.value = true;
 
   try {
@@ -51,6 +54,9 @@ const handleLogin = async () => {
     if (err.response?.status === 403) {
       isPendingApproval.value = true;
       errorMessage.value = err.response.data.message || 'Your registration is currently pending administrator approval.';
+    } else if (!err.response) {
+      isApiUnavailable.value = true;
+      errorMessage.value = 'The logistics API is not running. Start the Laravel backend on port 8000, then try again.';
     } else {
       errorMessage.value = err.response?.data?.message || 'Invalid credentials. Please try again.';
     }
@@ -63,6 +69,12 @@ const quickLogin = (account) => {
   email.value = account.email;
   password.value = account.password;
   handleLogin();
+};
+
+const previewAdminDashboard = () => {
+  localStorage.setItem('token', 'local-admin-preview');
+  localStorage.setItem('user_roles', JSON.stringify(['admin']));
+  router.push('/alona/logistics');
 };
 </script>
 
@@ -103,11 +115,11 @@ const quickLogin = (account) => {
       <div
         v-if="errorMessage"
         class="mb-6 flex items-start gap-3 rounded-2xl p-4 text-sm"
-        :class="isPendingApproval ? 'border border-amber-200 bg-amber-50 text-amber-800' : 'border border-red-200 bg-red-50 text-red-700'"
+          :class="isPendingApproval ? 'border border-amber-200 bg-amber-50 text-amber-800' : isApiUnavailable ? 'border border-blue-200 bg-blue-50 text-blue-800' : 'border border-red-200 bg-red-50 text-red-700'"
       >
         <ShieldAlert class="mt-0.5 h-5 w-5 shrink-0" :class="isPendingApproval ? 'text-amber-600' : 'text-red-600'" />
         <div>
-          <p class="font-semibold">{{ isPendingApproval ? 'Approval Required' : 'Authentication Error' }}</p>
+          <p class="font-semibold">{{ isPendingApproval ? 'Approval Required' : isApiUnavailable ? 'Backend Unavailable' : 'Authentication Error' }}</p>
           <p class="mt-1 text-xs leading-relaxed">{{ errorMessage }}</p>
         </div>
       </div>
@@ -151,15 +163,20 @@ const quickLogin = (account) => {
         </button>
       </form>
 
-      <div class="mt-6 border-t border-slate-200 pt-6 text-center">
-        <p class="text-xs text-slate-500">
-          New to Logistics OS?
-          <router-link to="/register" class="ml-1 inline-flex items-center gap-1 font-bold text-blue-600 hover:text-blue-500">
-            <UserPlus class="h-3.5 w-3.5" />
-            Register your account
-          </router-link>
-        </p>
-      </div>
+      <p class="mt-6 text-center text-sm text-slate-500">
+        Need an account?
+        <router-link to="/register" class="font-bold text-blue-600 hover:underline">Start registration</router-link>
+      </p>
+
+      <button
+        v-if="isDev"
+        type="button"
+        class="mt-4 w-full border border-teal-200 bg-teal-50 py-3 text-sm font-bold text-teal-800 hover:bg-teal-100"
+        @click="previewAdminDashboard"
+      >
+        Preview admin dashboard
+      </button>
+
     </div>
   </div>
 </template>

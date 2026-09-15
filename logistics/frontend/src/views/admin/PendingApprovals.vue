@@ -172,10 +172,10 @@ onMounted(() => {
             </div>
             <h1 class="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">User Registration Approvals</h1>
           </div>
-          <p class="mt-2 text-sm text-slate-500">Review identity documents, permits, and verify new merchant and customer accounts.</p>
+          <p class="mt-2 text-sm text-slate-500">Review registrations, approve rider applications, then assign approved riders to their delivery area.</p>
         </div>
 
-        <button @click="fetchUsers(pagination.current_page)" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"><RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin' : ''" /> Refresh</button>
+        <div class="flex items-center gap-3"><router-link to="/fleet" class="flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"><MapPin class="h-4 w-4" /> Assign rider areas</router-link><button @click="fetchUsers(pagination.current_page)" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"><RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin' : ''" /> Refresh</button></div>
       </div>
 
       <div v-if="actionMessage" class="mt-6 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800"><CheckCircle2 class="h-5 w-5 text-emerald-600" /> {{ actionMessage }}</div>
