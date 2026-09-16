@@ -34,6 +34,7 @@ class UserRegistrationTest extends TestCase
         $permit = UploadedFile::fake()->create('dti_permit.pdf', 800, 'application/pdf');
 
         $response = $this->postJson('/api/register', [
+            'account_type' => 'logistics',
             'first_name' => 'Juan',
             'last_name' => 'Dela Cruz',
             'middle_initial' => 'P',
@@ -84,6 +85,7 @@ class UserRegistrationTest extends TestCase
         $underageBirthday = now()->subYears(17)->format('Y-m-d');
 
         $response = $this->postJson('/api/register', [
+            'account_type' => 'logistics',
             'first_name' => 'Minor',
             'last_name' => 'User',
             'sex' => 'female',

@@ -2,12 +2,17 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() === 'pgsql') {
+            return;
+        }
+
         Schema::table('order_status_histories', function (Blueprint $table) {
             if (Schema::hasColumn('order_status_histories', 'hub_id')) $table->renameColumn('hub_id', 'location_hub_id');
             if (Schema::hasColumn('order_status_histories', 'user_id')) $table->renameColumn('user_id', 'performed_by_user_id');

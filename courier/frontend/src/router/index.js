@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
 import CourierAdminDashboard from '../views/CourierAdminDashboard.vue';
 import Register from '../views/auth/Register.vue';
+import RegistrationSubmitted from '../views/auth/RegistrationSubmitted.vue';
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: Register,
+  },
+  {
+    path: '/registration-submitted',
+    name: 'RegistrationSubmitted',
+    component: RegistrationSubmitted,
   },
   {
     path: '/',

@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', {
             localStorage.setItem('user_roles', JSON.stringify(this.roles));
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
 
-            return '/courier';
+            return response.data.redirect || '/courier';
         },
         async logout() {
             if (this.token) {

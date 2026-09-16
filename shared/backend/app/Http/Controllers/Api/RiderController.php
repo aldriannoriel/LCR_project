@@ -131,7 +131,7 @@ class RiderController extends Controller
 
     public function approveApplication(Request $request, Rider $rider)
     {
-        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
 
         $rider->update([
             'application_status' => 'approved',
@@ -151,7 +151,7 @@ class RiderController extends Controller
 
     public function rejectApplication(Request $request, Rider $rider)
     {
-        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager']);
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
 
         $validated = $request->validate([
             'reason' => 'required|string|min:5|max:1000',

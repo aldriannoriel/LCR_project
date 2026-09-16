@@ -84,8 +84,8 @@ export const useAlonaLogisticsStore = defineStore('alonaLogistics', () => {
     if (!parcelId || !newStatus) throw new Error('parcelId and newStatus are required.');
 
     const updatedParcel = await requestJson(`/parcels/${encodeURIComponent(parcelId)}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: newStatus, remarks }),
+      method: 'POST',
+      body: JSON.stringify({ status: newStatus, reason: remarks }),
     });
 
     const index = parcels.value.findIndex((parcel) => String(parcel.id) === String(parcelId));

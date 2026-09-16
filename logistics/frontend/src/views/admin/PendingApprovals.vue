@@ -37,6 +37,12 @@ const loading = ref(false);
 const selectedUser = ref(null);
 const showDetailModal = ref(false);
 const showRejectModal = ref(false);
+const showDocumentModal = ref(false);
+const documentUrl = ref('');
+const documentContentType = ref('');
+const documentTitle = ref('');
+const documentLoading = ref(false);
+const documentError = ref('');
 const rejectionReason = ref('');
 const processingAction = ref(false);
 const actionMessage = ref('');
@@ -138,16 +144,33 @@ const getDocumentUrl = (userId, type) => {
   return `http://localhost:8000/api/admin/users/${userId}/documents/${type}`;
 };
 
+const closeDocumentModal = () => {
+  if (documentUrl.value) URL.revokeObjectURL(documentUrl.value);
+  documentUrl.value = '';
+  documentContentType.value = '';
+  documentTitle.value = '';
+  documentError.value = '';
+  showDocumentModal.value = false;
+};
+
 const viewDocumentInNewTab = async (userId, type) => {
+  documentLoading.value = true;
+  documentError.value = '';
+  documentTitle.value = type === 'permit' ? 'Business / DTI Permit' : 'Primary Government ID';
+
   try {
     const response = await axios.get(`/admin/users/${userId}/documents/${type}`, {
       responseType: 'blob',
       headers: { Authorization: `Bearer ${auth.token}` },
     });
-    const fileUrl = URL.createObjectURL(response.data);
-    window.open(fileUrl, '_blank');
+    if (documentUrl.value) URL.revokeObjectURL(documentUrl.value);
+    documentContentType.value = response.headers['content-type'] || response.data.type || '';
+    documentUrl.value = URL.createObjectURL(response.data);
+    showDocumentModal.value = true;
   } catch (err) {
-    alert('Unable to load document. File might be missing or inaccessible.');
+    documentError.value = 'Unable to load this document. It may be missing or inaccessible.';
+  } finally {
+    documentLoading.value = false;
   }
 };
 
@@ -196,8 +219,8 @@ onMounted(() => {
       </div>
 
       <div class="mt-6 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.04)]">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[900px] text-left text-sm">
+        <div class="hidden overflow-x-auto lg:block">
+          <table class="w-full min-w-[1120px] text-left text-sm">
             <thead class="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
               <tr>
                 <th class="px-5 py-3.5">Applicant Details</th>
@@ -206,11 +229,11 @@ onMounted(() => {
                 <th class="px-5 py-3.5">Location</th>
                 <th class="px-5 py-3.5">Documents</th>
                 <th class="px-5 py-3.5">Status</th>
-                <th class="px-5 py-3.5 text-right">Actions</th>
+                <th class="whitespace-nowrap px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="u in users" :key="u.id" class="transition hover:bg-slate-50/70">
+              <tr v-for="u in users" :key="u.id" class="cursor-pointer transition hover:bg-blue-50/60" @click="openPreviewModal(u)">
                 <td class="px-5 py-4">
                   <div class="font-bold text-slate-900">{{ u.first_name ? `${u.first_name} ${u.middle_initial || ''} ${u.last_name}` : u.name }}</div>
                   <div v-if="u.business_name" class="mt-0.5 flex items-center gap-1 text-xs text-slate-500"><Building class="h-3 w-3" /><span>{{ u.business_name }}</span></div>
@@ -227,9 +250,9 @@ onMounted(() => {
                   <div class="text-slate-700">{{ u.city_municipality || '—' }}</div>
                   <div class="text-xs text-slate-400">{{ u.province || '—' }}</div>
                 </td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" @click.stop>
                   <div class="flex items-center gap-2">
-                    <span v-if="u.id_document_path" class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700"><FileText class="h-3 w-3" /> ID</span>
+                    <button v-if="u.id_document_path" @click="viewDocumentInNewTab(u.id, 'id')" class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"><FileText class="h-3 w-3" /> Open ID</button>
                     <span v-if="u.business_permit_path" class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700"><Building class="h-3 w-3" /> Permit</span>
                     <span v-if="!u.id_document_path && !u.business_permit_path" class="text-xs text-slate-400">None</span>
                   </div>
@@ -239,10 +262,12 @@ onMounted(() => {
                   <span v-else-if="u.approval_status === 'rejected'" class="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-800"><XCircle class="h-3 w-3" /> Rejected</span>
                   <span v-else class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"><Clock class="h-3 w-3" /> Pending Review</span>
                 </td>
-                <td class="space-x-2 px-5 py-4 text-right">
-                  <button @click="openPreviewModal(u)" class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"><Eye class="h-3.5 w-3.5" /> View</button>
-                  <button v-if="u.approval_status === 'pending'" @click="approveUser(u)" :disabled="processingAction" class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:opacity-60"><CheckCircle2 class="h-3.5 w-3.5" /> Approve</button>
-                  <button v-if="u.approval_status === 'pending'" @click="openRejectDialog(u)" :disabled="processingAction" class="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-500 disabled:opacity-60"><XCircle class="h-3.5 w-3.5" /> Reject</button>
+                <td class="whitespace-nowrap border-l border-slate-200 px-5 py-4 text-right" @click.stop>
+                  <div class="flex items-center justify-end gap-2">
+                    <button @click="openPreviewModal(u)" class="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"><Eye class="h-3.5 w-3.5" /> Review</button>
+                    <button v-if="u.approval_status === 'pending'" @click="approveUser(u)" :disabled="processingAction" class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:opacity-60"><CheckCircle2 class="h-3.5 w-3.5" /> Approve</button>
+                    <button v-if="u.approval_status === 'pending'" @click="openRejectDialog(u)" :disabled="processingAction" class="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-500 disabled:opacity-60"><XCircle class="h-3.5 w-3.5" /> Reject</button>
+                  </div>
                 </td>
               </tr>
               <tr v-if="!users.length && !loading"><td colspan="7" class="p-8 text-center text-slate-500">No registrations found for current filter.</td></tr>
@@ -253,6 +278,33 @@ onMounted(() => {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="space-y-3 p-3 lg:hidden">
+          <article v-for="u in users" :key="`card-${u.id}`" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" @click="openPreviewModal(u)">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="truncate font-bold text-slate-900">{{ u.first_name ? `${u.first_name} ${u.middle_initial || ''} ${u.last_name}` : u.name }}</h3>
+                <p v-if="u.business_name" class="mt-1 truncate text-xs text-slate-500">{{ u.business_name }}</p>
+              </div>
+              <span v-if="u.approval_status === 'approved'" class="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">Approved</span>
+              <span v-else-if="u.approval_status === 'rejected'" class="shrink-0 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-800">Rejected</span>
+              <span v-else class="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">Pending</span>
+            </div>
+            <dl class="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+              <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt><dd class="break-words text-slate-700">{{ u.email }}</dd></div>
+              <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Phone</dt><dd class="text-slate-700">{{ u.phone_number || '—' }}</dd></div>
+              <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Age / Birthday</dt><dd class="text-slate-700">{{ u.age ? `${u.age} yrs old` : '—' }} · {{ u.birthdate || '—' }}</dd></div>
+              <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Location</dt><dd class="text-slate-700">{{ [u.city_municipality, u.province].filter(Boolean).join(', ') || '—' }}</dd></div>
+            </dl>
+            <div class="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3" @click.stop>
+              <button v-if="u.id_document_path" @click="viewDocumentInNewTab(u.id, 'id')" class="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"><FileText class="h-3.5 w-3.5" /> Open ID</button>
+              <button @click="openPreviewModal(u)" class="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"><Eye class="h-3.5 w-3.5" /> Review</button>
+              <button v-if="u.approval_status === 'pending'" @click="approveUser(u)" :disabled="processingAction" class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"><CheckCircle2 class="h-3.5 w-3.5" /> Approve</button>
+              <button v-if="u.approval_status === 'pending'" @click="openRejectDialog(u)" :disabled="processingAction" class="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"><XCircle class="h-3.5 w-3.5" /> Reject</button>
+            </div>
+          </article>
+          <p v-if="!users.length && !loading" class="p-8 text-center text-slate-500">No registrations found for current filter.</p>
         </div>
 
         <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-4 text-xs font-semibold text-slate-600">
@@ -350,6 +402,27 @@ onMounted(() => {
           <button @click="showRejectModal = false" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
           <button @click="submitRejection" :disabled="processingAction || !rejectionReason.trim()" class="rounded-xl bg-rose-600 px-5 py-2 text-sm font-semibold text-white hover:bg-rose-500 disabled:opacity-50">{{ processingAction ? 'Submitting...' : 'Confirm Rejection & Send Email' }}</button>
         </div>
+      </div>
+    </div>
+
+    <div v-if="showDocumentModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" @click.self="closeDocumentModal">
+      <div class="flex h-[min(88vh,760px)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-[0_30px_90px_rgba(15,23,42,0.3)]">
+        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600">Document preview</p>
+            <h2 class="mt-1 text-lg font-black text-slate-900">{{ documentTitle }}</h2>
+          </div>
+          <button @click="closeDocumentModal" class="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Close document preview"><X class="h-5 w-5" /></button>
+        </header>
+        <div class="flex min-h-0 flex-1 items-center justify-center bg-slate-100 p-4">
+          <div v-if="documentLoading" class="text-sm font-semibold text-slate-500">Loading document...</div>
+          <div v-else-if="documentError" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ documentError }}</div>
+          <img v-else-if="documentContentType.startsWith('image/')" :src="documentUrl" :alt="documentTitle" class="max-h-full max-w-full rounded-lg object-contain shadow-sm" />
+          <iframe v-else :src="documentUrl" :title="documentTitle" class="h-full w-full rounded-lg border border-slate-200 bg-white" />
+        </div>
+        <footer class="flex items-center justify-end border-t border-slate-200 px-5 py-3">
+          <button @click="closeDocumentModal" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700">Close Preview</button>
+        </footer>
       </div>
     </div>
   </div>

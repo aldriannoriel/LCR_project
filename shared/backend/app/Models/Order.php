@@ -15,7 +15,8 @@ class Order extends Model
         'recipient_address', 'weight_kg', 'flag_reason', 'scanned_at', 'rider_id',
         'assigned_at', 'dispatched_at', 'delivered_at', 'delivery_status',
         'delivery_failure_reason', 'delivery_notes', 'delivery_fee',
-        'current_hub_id', 'hub_scanned_at',
+        'current_hub_id', 'hub_scanned_at', 'delivery_attempts', 'proof_image_path',
+        'delivery_failure_photo_path',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class Order extends Model
             'assigned_at' => 'datetime',
             'dispatched_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'delivery_attempts' => 'integer',
         ];
     }
 

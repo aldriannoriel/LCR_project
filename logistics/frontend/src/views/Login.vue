@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
-import { Lock, Mail, ShieldAlert, ArrowRight, Building2, Bike } from 'lucide-vue-next';
+import { Lock, Mail, ShieldAlert, ArrowRight } from 'lucide-vue-next';
 import logo from '../assets/alona2.png';
 
 const email = ref('');
@@ -11,35 +11,9 @@ const errorMessage = ref('');
 const isPendingApproval = ref(false);
 const isApiUnavailable = ref(false);
 const loading = ref(false);
-const isDev = import.meta.env.DEV;
 
 const authStore = useAuthStore();
 const router = useRouter();
-
-const demoAccounts = [
-  {
-    label: 'Admin',
-    email: 'admin@logistics.local',
-    password: 'password123',
-    icon: Building2,
-    desc: 'Dashboard',
-    gradient: 'from-blue-500 to-indigo-600',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
-  },
-  {
-    label: 'Courier',
-    email: 'courier@logistics.local',
-    password: 'password123',
-    icon: Bike,
-    desc: 'Deliveries',
-    gradient: 'from-sky-500 to-blue-600',
-    bg: 'bg-sky-50',
-    text: 'text-sky-700',
-    border: 'border-sky-200',
-  },
-];
 
 const handleLogin = async () => {
   errorMessage.value = '';
@@ -65,17 +39,6 @@ const handleLogin = async () => {
   }
 };
 
-const quickLogin = (account) => {
-  email.value = account.email;
-  password.value = account.password;
-  handleLogin();
-};
-
-const previewAdminDashboard = () => {
-  localStorage.setItem('token', 'local-admin-preview');
-  localStorage.setItem('user_roles', JSON.stringify(['admin']));
-  router.push('/alona/logistics');
-};
 </script>
 
 <template>
@@ -86,29 +49,14 @@ const previewAdminDashboard = () => {
         <p class="mt-1 text-sm text-slate-500">Sign in to your account</p>
       </div>
 
-      <div class="mb-6 grid grid-cols-2 gap-2">
-        <button
-          v-for="demo in demoAccounts"
-          :key="demo.label"
-          @click="quickLogin(demo)"
-          class="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:bg-white"
-        >
-          <div class="h-10 w-10 rounded-xl bg-gradient-to-br p-0.5" :class="demo.gradient">
-            <div class="flex h-full w-full items-center justify-center rounded-lg bg-white/90" :class="demo.bg">
-              <component :is="demo.icon" class="h-5 w-5" :class="demo.text" />
-            </div>
+      <div class="mb-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-200"></div>
           </div>
-          <span class="text-[11px] font-bold text-slate-800">{{ demo.label }}</span>
-          <span class="text-[10px] text-slate-500">{{ demo.desc }}</span>
-        </button>
-      </div>
-
-      <div class="relative mb-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-slate-200"></div>
-        </div>
-        <div class="relative flex justify-center">
-          <span class="bg-white px-4 text-xs font-medium uppercase tracking-[0.2em] text-slate-400">or sign in manually</span>
+          <div class="relative flex justify-center">
+            <span class="bg-white px-4 text-xs font-medium uppercase tracking-[0.2em] text-slate-400">sign in manually</span>
+          </div>
         </div>
       </div>
 
@@ -167,15 +115,6 @@ const previewAdminDashboard = () => {
         Need an account?
         <router-link to="/register" class="font-bold text-blue-600 hover:underline">Start registration</router-link>
       </p>
-
-      <button
-        v-if="isDev"
-        type="button"
-        class="mt-4 w-full border border-teal-200 bg-teal-50 py-3 text-sm font-bold text-teal-800 hover:bg-teal-100"
-        @click="previewAdminDashboard"
-      >
-        Preview admin dashboard
-      </button>
 
     </div>
   </div>

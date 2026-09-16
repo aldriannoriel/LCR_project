@@ -16,10 +16,17 @@ class ReportController extends Controller
         return $request->validate(['date_from' => ['nullable', 'date'], 'date_to' => ['nullable', 'date', 'after_or_equal:date_from'], 'region' => ['nullable', 'string'], 'hub_id' => ['nullable', 'integer', 'exists:hubs,id']]);
     }
 
-    public function analytics(Request $request, ReportAnalyticsService $service) { return response()->json($service->analytics($this->filters($request))); }
+    public function analytics(Request $request, ReportAnalyticsService $service)
+    {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
+        return response()->json($service->analytics($this->filters($request)));
+    }
 
     public function csv(Request $request, ReportAnalyticsService $service)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $writer = Writer::createFromFileObject(new SplTempFileObject());
         $writer->insertOne(['AWB', 'Status', 'Hub', 'Created', 'Sorting Hours', 'Final Mile Hours', 'SLA Status']);
         foreach ($service->query($this->filters($request))->get() as $order) { $sla = $service->sla($order); $writer->insertOne([$order->awb_number, $order->status, $order->currentHub?->name ?? $order->hub?->name, $order->created_at->toDateTimeString(), $sla['sorting_hours'], $sla['final_mile_hours'], $sla['status']]); }
@@ -28,6 +35,8 @@ class ReportController extends Controller
 
     public function pdf(Request $request, ReportAnalyticsService $service)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $filters = $this->filters($request); return Pdf::loadView('reports.summary', ['analytics' => $service->analytics($filters), 'filters' => $filters])->setPaper('a4')->stream('logistics-report.pdf');
     }
 }

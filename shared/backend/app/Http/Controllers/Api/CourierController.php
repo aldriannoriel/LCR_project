@@ -254,13 +254,18 @@ class CourierController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        DB::transaction(function () use ($order, $validated, $rider) {
+        DB::transaction(function () use ($order, $validated, $rider, $request) {
+            $proofPath = $request->hasFile('proof_image')
+                ? $request->file('proof_image')->store('delivery-proof', 'local')
+                : null;
+
             $order->update([
                 'status' => 'delivered',
                 'delivery_status' => 'delivered',
                 'delivered_at' => now(),
                 'recipient_name' => $validated['recipient_name'] ?? $order->recipient_name,
                 'delivery_notes' => $validated['notes'] ?? null,
+                'proof_image_path' => $proofPath,
             ]);
 
             OrderStatusHistory::create([
@@ -301,26 +306,37 @@ class CourierController extends Controller
             'photo' => 'nullable|image|max:5120',
         ]);
 
-        DB::transaction(function () use ($order, $validated, $rider) {
+        DB::transaction(function () use ($order, $validated, $rider, $request) {
+            $attempts = ($order->delivery_attempts ?? 0) + 1;
+            $failurePhotoPath = $request->hasFile('photo')
+                ? $request->file('photo')->store('delivery-failures', 'local')
+                : null;
+            $requiresReturn = in_array($validated['reason'], ['refused', 'wrong_address', 'damaged'], true)
+                || $attempts >= 3;
+
             $order->update([
-                'status' => 'in_return_queue',
+                'status' => $requiresReturn ? 'in_return_queue' : 'in_hub',
                 'delivery_status' => 'failed',
+                'delivery_attempts' => $attempts,
                 'delivery_failure_reason' => $validated['reason'] . ($validated['notes'] ? ': ' . $validated['notes'] : ''),
+                'delivery_failure_photo_path' => $failurePhotoPath,
             ]);
 
-            ReturnRecord::updateOrCreate(
-                ['order_id' => $order->id],
-                [
-                    'return_reason' => match ($validated['reason']) {
-                        'refused' => 'customer_refused',
-                        'wrong_address' => 'incorrect_address',
-                        'damaged' => 'damaged_goods',
-                        default => 'failed_delivery_3x',
-                    },
-                    'status' => 'pending_intake',
-                    'action_notes' => $validated['notes'] ?? null,
-                ]
-            );
+            if ($requiresReturn) {
+                ReturnRecord::updateOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'return_reason' => match ($validated['reason']) {
+                            'refused' => 'customer_refused',
+                            'wrong_address' => 'incorrect_address',
+                            'damaged' => 'damaged_goods',
+                            default => 'failed_delivery_3x',
+                        },
+                        'status' => 'pending_intake',
+                        'action_notes' => $validated['notes'] ?? null,
+                    ]
+                );
+            }
 
             OrderStatusHistory::create([
                 'order_id' => $order->id,

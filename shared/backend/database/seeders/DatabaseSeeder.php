@@ -14,6 +14,7 @@ use App\Models\ReturnRecord;
 use App\Models\OrderStatusHistory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
@@ -93,9 +94,15 @@ class DatabaseSeeder extends Seeder
 
         $hubs = Hub::query()->pluck('id')->values();
         Hub::query()->each(function (Hub $hub) {
-            $hub->update(['hub_type' => ['national_sorting' => 'national', 'gateway' => 'gateway', 'regional' => 'regional'][$hub->type] ?? 'regional', 'current_stock' => 0]);
+            $data = ['current_stock' => 0];
+
+            if (Schema::hasColumn('hubs', 'hub_type')) {
+                $data['hub_type'] = ['national_sorting' => 'national', 'gateway' => 'gateway', 'regional' => 'regional'][$hub->type] ?? 'regional';
+            }
+
+            $hub->update($data);
         });
-            $statuses = ['pending', 'received', 'pending', 'delivered', 'in_hub', 'flagged'];
+        $statuses = ['pending', 'received', 'pending', 'delivered', 'in_hub', 'flagged'];
         for ($index = 1; $index <= 20; $index++) {
             Order::updateOrCreate(
                 ['awb_number' => 'LCR-2026-'.str_pad((string) $index, 4, '0', STR_PAD_LEFT)],
@@ -116,7 +123,9 @@ class DatabaseSeeder extends Seeder
             );
         }
         foreach (Hub::all() as $hub) {
-            $hub->update(['current_stock' => Order::where('current_hub_id', $hub->id)->where('status', 'in_hub')->count()]);
+            if (Schema::hasColumn('hubs', 'current_stock')) {
+                $hub->update(['current_stock' => Order::where('current_hub_id', $hub->id)->where('status', 'in_hub')->count()]);
+            }
         }
 
         foreach ([
@@ -162,7 +171,15 @@ class DatabaseSeeder extends Seeder
                 'hub_id' => $hubs[$index % $hubs->count()],
                 'approval_status' => 'approved',
             ]);
-            $rider = Rider::updateOrCreate(['user_id' => $user->id], ['hub_id' => $user->hub_id, 'vehicle_type' => $riderData[2], 'plate_number' => $riderData[3], 'status' => $riderData[4], 'phone_number' => '0917-555-000'.($index + 1)]);
+            $hub = Hub::find($user->hub_id);
+            $rider = Rider::updateOrCreate(['user_id' => $user->id], [
+                'archipelago_id' => $hub?->archipelago_id,
+                'hub_id' => $user->hub_id,
+                'vehicle_type' => $riderData[2],
+                'plate_number' => $riderData[3],
+                'status' => $riderData[4],
+                'phone_number' => '0917-555-000'.($index + 1),
+            ]);
             RiderPerformance::updateOrCreate(['rider_id' => $rider->id], ['total_assigned' => 120 + ($index * 20), 'total_completed' => 110 + ($index * 15), 'total_failed' => $index, 'on_time_rate' => 91.5 + $index, 'rating' => 4.5 + ($index / 10)]);
         }
 
@@ -179,6 +196,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $courier->assignRole('Rider');
         $courierRider = Rider::updateOrCreate(['user_id' => $courier->id], [
+            'archipelago_id' => $ncrHub?->archipelago_id,
             'hub_id' => $ncrHub?->id,
             'vehicle_type' => 'motorcycle',
             'plate_number' => 'DEMO-001',

@@ -70,7 +70,7 @@ class AuthController extends Controller
             ? $request->file('business_permit')->store('documents', 'local')
             : null;
 
-        $fullName = trim("{$validated['first_name']} " . ($validated['middle_initial'] ? "{$validated['middle_initial']} " : '') . "{$validated['last_name']}");
+        $fullName = trim("{$validated['first_name']} " . (($validated['middle_initial'] ?? null) ? "{$validated['middle_initial']} " : '') . "{$validated['last_name']}");
 
         $result = DB::transaction(function () use ($request, $validated, $fullName, $birthDate, $age, $idPath, $permitPath) {
             $user = User::create([

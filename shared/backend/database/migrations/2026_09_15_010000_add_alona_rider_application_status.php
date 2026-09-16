@@ -12,17 +12,34 @@ return new class extends Migration
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE alona_riders MODIFY status ENUM('active', 'suspended', 'on_duty', 'inactive') NOT NULL DEFAULT 'active'");
         }
-        Schema::table('alona_riders', function (Blueprint $table) {
-            $table->enum('application_status', ['pending_review', 'approved', 'rejected'])->default('pending_review')->after('status');
-            $table->text('application_rejection_reason')->nullable()->after('application_status');
-        });
+
+        if (! Schema::hasColumn('alona_riders', 'application_status')) {
+            Schema::table('alona_riders', function (Blueprint $table) {
+                $table->enum('application_status', ['pending_review', 'approved', 'rejected'])->default('pending_review')->after('status');
+            });
+        }
+
+        if (! Schema::hasColumn('alona_riders', 'application_rejection_reason')) {
+            Schema::table('alona_riders', function (Blueprint $table) {
+                $table->text('application_rejection_reason')->nullable()->after('application_status');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('alona_riders', function (Blueprint $table) {
-            $table->dropColumn(['application_status', 'application_rejection_reason']);
-        });
+        if (Schema::hasColumn('alona_riders', 'application_rejection_reason')) {
+            Schema::table('alona_riders', function (Blueprint $table) {
+                $table->dropColumn('application_rejection_reason');
+            });
+        }
+
+        if (Schema::hasColumn('alona_riders', 'application_status')) {
+            Schema::table('alona_riders', function (Blueprint $table) {
+                $table->dropColumn('application_status');
+            });
+        }
+
         if (DB::getDriverName() === 'mysql') {
             DB::statement("UPDATE alona_riders SET status = 'active' WHERE status = 'inactive'");
             DB::statement("ALTER TABLE alona_riders MODIFY status ENUM('active', 'suspended', 'on_duty') NOT NULL DEFAULT 'active'");

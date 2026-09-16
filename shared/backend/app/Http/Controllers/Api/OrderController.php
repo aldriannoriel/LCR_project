@@ -16,6 +16,8 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
+        $this->requireAnyRole($request, ['Admin', 'Super Admin', 'Hub Manager', 'Dispatcher']);
+
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:pending,received,at_sorting_center,in_transit,sorted,in_hub,assigned_to_rider,out_for_delivery,delivered,in_return_queue,damaged,flagged'],
@@ -243,6 +245,23 @@ class OrderController extends Controller
             'status' => ['required', 'in:received,in_transit,in_hub,out_for_delivery,delivered,delivery_failed,in_return_queue'],
             'reason' => ['required_if:status,delivery_failed', 'nullable', 'string', 'max:1000'],
         ]);
+
+        $allowedTransitions = [
+            'pending' => ['received'],
+            'received' => ['in_transit', 'in_hub'],
+            'in_transit' => ['received', 'in_hub'],
+            'in_hub' => ['out_for_delivery'],
+            'out_for_delivery' => ['delivered', 'delivery_failed'],
+            'in_return_queue' => [],
+            'delivered' => [],
+            'damaged' => [],
+            'flagged' => [],
+        ];
+        abort_unless(
+            in_array($validated['status'], $allowedTransitions[$order->status] ?? [], true),
+            422,
+            "Cannot change parcel status from {$order->status} to {$validated['status']}."
+        );
 
         $nextStatus = $validated['status'] === 'delivery_failed' ? 'in_return_queue' : $validated['status'];
         $order->update([
