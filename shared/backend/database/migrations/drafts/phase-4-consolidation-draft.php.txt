@@ -28,6 +28,24 @@ return new class extends Migration
             $table->foreignId('legacy_rider_id')->unique()->constrained('riders')->restrictOnDelete();
             $table->foreignId('alona_rider_id')->unique()->constrained('alona_riders')->restrictOnDelete();
             $table->foreignId('legacy_hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->foreignId('alona_hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->string('mapping_status', 30)->default('mapped');
+            $table->timestamps();
+        });
+
+        Schema::create('legacy_alona_hub_map', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('legacy_hub_id')->unique()->constrained('hubs')->restrictOnDelete();
+            $table->foreignId('alona_hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->foreignId('alona_zone_id')->nullable()->constrained('alona_zones')->nullOnDelete();
+            $table->string('mapping_status', 30)->default('mapped');
+            $table->timestamps();
+        });
+
+        Schema::create('legacy_alona_manifest_map', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('legacy_manifest_id')->unique()->constrained('transfer_manifests')->restrictOnDelete();
+            $table->foreignId('alona_manifest_id')->nullable()->constrained('alona_transport_manifests')->nullOnDelete();
             $table->string('mapping_status', 30)->default('mapped');
             $table->timestamps();
         });
@@ -69,14 +87,91 @@ return new class extends Migration
         });
 
         // 3. Add companion tables for bins, transfers, returns, pickups, and evidence.
-        // These are intentionally left as explicit design gates until their final
-        // columns and ownership rules are approved.
-        // Schema::create('alona_bin_assignments', ...);
-        // Schema::create('alona_hub_transfer_manifests', ...);
-        // Schema::create('alona_hub_transfer_items', ...);
-        // Schema::create('alona_parcel_returns', ...);
-        // Schema::create('alona_pickup_links', ...);
-        // Schema::create('alona_delivery_evidence', ...);
+        // These remain design-gated and are intentionally not executed until the
+        // operational ownership rules and status policy are approved.
+        Schema::create('alona_parcel_locations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->foreignId('hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->string('location_type', 50)->nullable();
+            $table->string('bin_code', 80)->nullable();
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('effective_at');
+            $table->timestamps();
+            $table->index(['parcel_id', 'effective_at']);
+        });
+
+        Schema::create('alona_bin_assignments', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->foreignId('hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->string('bin_code', 80);
+            $table->string('scan_event', 80);
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->string('idempotency_key', 180)->unique();
+            $table->json('metadata')->nullable();
+            $table->timestamp('occurred_at');
+            $table->timestamps();
+        });
+
+        Schema::create('alona_hub_transfer_manifests', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('origin_hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->foreignId('destination_hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->string('status', 40)->default('pending');
+            $table->string('reference', 120)->nullable();
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('alona_hub_transfer_items', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('manifest_id')->constrained('alona_hub_transfer_manifests')->cascadeOnDelete();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->unsignedInteger('quantity')->default(1);
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->timestamps();
+            $table->unique(['manifest_id', 'parcel_id']);
+        });
+
+        Schema::create('alona_parcel_returns', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('reason', 80);
+            $table->string('status', 40)->default('queued');
+            $table->text('notes')->nullable();
+            $table->timestamp('occurred_at');
+            $table->timestamps();
+        });
+
+        Schema::create('alona_pickup_links', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('pickup_id')->constrained('pickup_requests')->cascadeOnDelete();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->timestamps();
+            $table->unique(['pickup_id', 'parcel_id']);
+        });
+
+        Schema::create('alona_delivery_evidence', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->string('delivery_status', 40)->nullable();
+            $table->string('recipient_name', 120)->nullable();
+            $table->string('photo_path', 255)->nullable();
+            $table->text('notes')->nullable();
+            $table->string('failure_reason', 120)->nullable();
+            $table->decimal('delivery_fee', 10, 2)->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+        });
 
         // 4. Backfill must be a separately reviewed command/job, not a migration.
         // foreach (Order::cursor() as $order) {
@@ -92,12 +187,21 @@ return new class extends Migration
     {
         // Rollback must be flow-scoped in production. Do not delete projected
         // Alona history automatically. This down() is intentionally incomplete.
+        Schema::dropIfExists('alona_delivery_evidence');
+        Schema::dropIfExists('alona_pickup_links');
+        Schema::dropIfExists('alona_parcel_returns');
+        Schema::dropIfExists('alona_hub_transfer_items');
+        Schema::dropIfExists('alona_hub_transfer_manifests');
+        Schema::dropIfExists('alona_bin_assignments');
+        Schema::dropIfExists('alona_parcel_locations');
         Schema::dropIfExists('alona_parcel_events');
         Schema::table('alona_parcels', function (Blueprint $table) {
             $table->dropUnique(['legacy_order_id']);
             $table->dropIndex(['legacy_awb']);
             $table->dropColumn(['legacy_order_id', 'legacy_awb']);
         });
+        Schema::dropIfExists('legacy_alona_manifest_map');
+        Schema::dropIfExists('legacy_alona_hub_map');
         Schema::dropIfExists('alona_migration_quarantine');
         Schema::dropIfExists('legacy_alona_rider_map');
         Schema::dropIfExists('legacy_alona_parcel_map');
