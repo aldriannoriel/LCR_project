@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Activity, AlertTriangle, LayoutDashboard, MapPinned, PackageCheck, RefreshCw, Truck, Users } from 'lucide-vue-next';
 import { useAlonaLogisticsStore } from '../../stores/alonaLogisticsStore';
 import AlonaManifestInspectorModal from '../../components/alona/AlonaManifestInspectorModal.vue';
@@ -8,6 +9,8 @@ import AlonaZoneManager from '../../components/alona/AlonaZoneManager.vue';
 import ParcelControlCenter from '../../components/admin/ParcelControlCenter.vue';
 
 const store = useAlonaLogisticsStore();
+const route = useRoute();
+const router = useRouter();
 const activeTab = ref('overview');
 const selectedManifest = ref(null);
 
@@ -29,8 +32,11 @@ const tabs = [
 const refresh = async () => {
   try { await store.fetchLogisticsData(); } catch (_) {}
 };
+const syncTab = () => { activeTab.value = tabs.some((tab) => tab.id === route.params.tab) ? route.params.tab : tabs.some((tab) => tab.id === route.query.tab) ? route.query.tab : 'overview'; };
+const goTab = (tab) => router.push(tab === 'overview' ? { name: 'AlonaLogisticsDashboard' } : { name: 'AlonaLogisticsTab', params: { tab } });
 const statusLabel = (value) => String(value || '').replaceAll('_', ' ');
 
+watch(() => [route.params.tab, route.query.tab], syncTab, { immediate: true });
 onMounted(async () => {
   await refresh();
   await store.initRealtimeSubscriptions();
@@ -48,10 +54,10 @@ onBeforeUnmount(() => store.stopRealtimeSubscriptions());
 
       <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><article v-for="item in metrics" :key="item.label" class="border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-start justify-between gap-4"><div><p class="text-sm font-semibold text-slate-500">{{ item.label }}</p><p class="mt-3 text-3xl font-black">{{ item.value }}</p></div><div class="flex h-11 w-11 items-center justify-center" :class="item.tone"><component :is="item.icon" class="h-5 w-5" /></div></div></article></section>
 
-      <nav class="mt-8 flex gap-1 overflow-x-auto border-b border-slate-200" aria-label="Logistics workspace tabs"><button v-for="tab in tabs" :key="tab.id" class="flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition" :class="activeTab === tab.id ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-900'" @click="activeTab = tab.id"><component :is="tab.icon" class="h-4 w-4" />{{ tab.label }}</button></nav>
+      <nav class="mt-8 flex gap-1 overflow-x-auto border-b border-slate-200" aria-label="Logistics workspace tabs"><button v-for="tab in tabs" :key="tab.id" class="flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition" :class="activeTab === tab.id ? 'border-teal-700 text-teal-800' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-900'" @click="goTab(tab.id)"><component :is="tab.icon" class="h-4 w-4" />{{ tab.label }}</button></nav>
 
       <section v-if="activeTab === 'overview'" class="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <article class="border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-[11px] font-black uppercase tracking-[0.2em] text-teal-700">Approval queue</p><h2 class="mt-1 text-xl font-black">Seller manifests</h2></div><button class="text-sm font-bold text-teal-700 hover:text-teal-900" @click="activeTab = 'manifests'">View all</button></div><div class="mt-5 space-y-3"><button v-for="manifest in store.manifests.slice(0, 5)" :key="manifest.id" class="flex w-full items-center justify-between gap-4 border border-slate-200 p-4 text-left hover:border-teal-400" @click="selectedManifest = manifest"><div><p class="font-mono text-sm font-black">{{ manifest.manifest_number || manifest.manifest_code }}</p><p class="mt-1 text-xs text-slate-500">{{ manifest.seller?.name || 'Seller account' }} · {{ manifest.parcels_count ?? manifest.total_parcels ?? 0 }} parcels</p></div><span class="text-xs font-black uppercase text-amber-700">{{ statusLabel(manifest.status) }}</span></button><p v-if="!store.manifests.length" class="border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">No manifests are waiting for review.</p></div></article>
+        <article class="border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-[11px] font-black uppercase tracking-[0.2em] text-teal-700">Approval queue</p><h2 class="mt-1 text-xl font-black">Seller manifests</h2></div><button class="text-sm font-bold text-teal-700 hover:text-teal-900" @click="goTab('manifests')">View all</button></div><div class="mt-5 space-y-3"><button v-for="manifest in store.manifests.slice(0, 5)" :key="manifest.id" class="flex w-full items-center justify-between gap-4 border border-slate-200 p-4 text-left hover:border-teal-400" @click="selectedManifest = manifest"><div><p class="font-mono text-sm font-black">{{ manifest.manifest_number || manifest.manifest_code }}</p><p class="mt-1 text-xs text-slate-500">{{ manifest.seller?.name || 'Seller account' }} · {{ manifest.parcels_count ?? manifest.total_parcels ?? 0 }} parcels</p></div><span class="text-xs font-black uppercase text-amber-700">{{ statusLabel(manifest.status) }}</span></button><p v-if="!store.manifests.length" class="border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">No manifests are waiting for review.</p></div></article>
         <article class="border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-[11px] font-black uppercase tracking-[0.2em] text-teal-700">Live pulse</p><h2 class="mt-1 text-xl font-black">Parcel movement</h2></div><Activity class="h-5 w-5 text-teal-700" /></div><div class="mt-5 space-y-4"><div v-for="status in ['AT_SORTING_CENTER', 'OUT_FOR_DELIVERY', 'DELIVERY_FAILED', 'DELIVERED', 'RETURNED']" :key="status" class="flex items-center justify-between border-b border-slate-100 pb-3"><span class="text-sm font-semibold text-slate-600">{{ statusLabel(status) }}</span><span class="font-mono text-lg font-black">{{ countBy([status]) }}</span></div></div></article>
       </section>
 

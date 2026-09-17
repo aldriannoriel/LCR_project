@@ -1,0 +1,105 @@
+<?php
+
+// DRAFT ONLY. This file is intentionally .php.txt so Laravel cannot load it.
+// Do not rename or execute until the Phase 4 decision gate is approved.
+// This draft is a schema/backfill outline, not a production-ready migration.
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // 1. Crosswalks and quarantine. Keep source IDs immutable.
+        Schema::create('legacy_alona_parcel_map', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('legacy_order_id')->unique()->constrained('orders')->restrictOnDelete();
+            $table->foreignId('alona_parcel_id')->unique()->constrained('alona_parcels')->restrictOnDelete();
+            $table->string('legacy_awb', 80)->index();
+            $table->string('mapping_status', 30)->default('mapped');
+            $table->timestamps();
+        });
+
+        Schema::create('legacy_alona_rider_map', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('legacy_rider_id')->unique()->constrained('riders')->restrictOnDelete();
+            $table->foreignId('alona_rider_id')->unique()->constrained('alona_riders')->restrictOnDelete();
+            $table->foreignId('legacy_hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->string('mapping_status', 30)->default('mapped');
+            $table->timestamps();
+        });
+
+        Schema::create('alona_migration_quarantine', function (Blueprint $table) {
+            $table->id();
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id');
+            $table->string('source_reference', 120)->nullable();
+            $table->string('reason', 120);
+            $table->json('payload')->nullable();
+            $table->timestamp('resolved_at')->nullable();
+            $table->timestamps();
+            $table->index(['source_type', 'source_id']);
+        });
+
+        Schema::table('alona_parcels', function (Blueprint $table) {
+            $table->unsignedBigInteger('legacy_order_id')->nullable()->unique();
+            $table->string('legacy_awb', 80)->nullable()->index();
+        });
+
+        // 2. Operational history that AlonaAuditLog cannot currently represent.
+        Schema::create('alona_parcel_events', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('parcel_id')->constrained('alona_parcels')->cascadeOnDelete();
+            $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('hub_id')->nullable()->constrained('hubs')->nullOnDelete();
+            $table->string('source_type', 80);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->string('idempotency_key', 180)->unique();
+            $table->string('event_type', 80);
+            $table->string('previous_status', 80)->nullable();
+            $table->string('new_status', 80)->nullable();
+            $table->json('metadata')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('occurred_at');
+            $table->timestamps();
+            $table->index(['parcel_id', 'occurred_at']);
+        });
+
+        // 3. Add companion tables for bins, transfers, returns, pickups, and evidence.
+        // These are intentionally left as explicit design gates until their final
+        // columns and ownership rules are approved.
+        // Schema::create('alona_bin_assignments', ...);
+        // Schema::create('alona_hub_transfer_manifests', ...);
+        // Schema::create('alona_hub_transfer_items', ...);
+        // Schema::create('alona_parcel_returns', ...);
+        // Schema::create('alona_pickup_links', ...);
+        // Schema::create('alona_delivery_evidence', ...);
+
+        // 4. Backfill must be a separately reviewed command/job, not a migration.
+        // foreach (Order::cursor() as $order) {
+        //     validate unique AWB, seller, rider, recipient, hub, and status;
+        //     quarantine invalid records;
+        //     create AlonaParcel and immutable crosswalk for valid records;
+        // }
+        // Backfill OrderStatusHistory into alona_parcel_events with original
+        // actor, hub, notes, and occurred_at. Use idempotency keys.
+    }
+
+    public function down(): void
+    {
+        // Rollback must be flow-scoped in production. Do not delete projected
+        // Alona history automatically. This down() is intentionally incomplete.
+        Schema::dropIfExists('alona_parcel_events');
+        Schema::table('alona_parcels', function (Blueprint $table) {
+            $table->dropUnique(['legacy_order_id']);
+            $table->dropIndex(['legacy_awb']);
+            $table->dropColumn(['legacy_order_id', 'legacy_awb']);
+        });
+        Schema::dropIfExists('alona_migration_quarantine');
+        Schema::dropIfExists('legacy_alona_rider_map');
+        Schema::dropIfExists('legacy_alona_parcel_map');
+    }
+};

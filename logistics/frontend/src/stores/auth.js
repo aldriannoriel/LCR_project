@@ -36,6 +36,11 @@ export const useAuthStore = defineStore('auth', {
             localStorage.setItem('user_roles', JSON.stringify(this.roles));
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
 
+            const canCourier = this.roles.some((role) => ['courier_admin', 'admin', 'super_admin'].includes(role));
+            const canLogistics = this.roles.some((role) => ['logistics_admin', 'admin', 'super_admin'].includes(role));
+            if (canCourier && canLogistics) return '/workspace';
+            if (canCourier) return '/courier-admin';
+            if (canLogistics) return '/alona/logistics';
             return '/dashboard';
         },
         async logout() {

@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   Users,
   Settings,
-  X
+  X,
+  Truck,
+  Warehouse
 } from 'lucide-vue-next';
 
 const auth = useAuthStore();
@@ -38,6 +40,9 @@ const navigation = computed(() => [
 const userEmail = computed(() => auth.user?.email || 'Operations user');
 const role = computed(() => auth.userRoles[0] || 'Dispatcher');
 const hubName = computed(() => auth.user?.hub?.name || 'Network-wide');
+const canCourier = computed(() => auth.userRoles.some((item) => ['courier_admin', 'admin', 'super_admin'].includes(item)));
+const canLogistics = computed(() => auth.userRoles.some((item) => ['logistics_admin', 'admin', 'super_admin'].includes(item)));
+const canSwitchWorkspace = computed(() => canCourier.value && canLogistics.value);
 
 const closeMenus = () => {
   mobileOpen.value = false;
@@ -103,6 +108,14 @@ onMounted(async () => {
           <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/alona/logistics')">
             <LayoutDashboard class="h-4 w-4 text-teal-600" />Open Alona control room
           </button>
+          <template v-if="canSwitchWorkspace">
+            <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/courier-admin')">
+              <Truck class="h-4 w-4 text-blue-600" />Open courier workspace
+            </button>
+            <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100" @click="go('/workspace')">
+              <Warehouse class="h-4 w-4 text-teal-600" />Choose workspace
+            </button>
+          </template>
         </div>
       </div>
 

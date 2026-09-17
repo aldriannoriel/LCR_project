@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
+import WorkspaceChooser from '../views/WorkspaceChooser.vue';
 import ChatCenter from '../views/chat/ChatCenter.vue';
 import AccountSettings from '../views/account/AccountSettings.vue';
 import AlonaLogisticsDashboard from '../views/alona/AlonaLogisticsDashboard.vue';
@@ -20,6 +21,8 @@ import CourierDeliveries from '../courier/views/Deliveries.vue';
 import CourierEarnings from '../courier/views/Earnings.vue';
 import CourierHistory from '../courier/views/History.vue';
 import CourierSettings from '../courier/views/Settings.vue';
+import WorkspaceRouteShell from '../components/WorkspaceRouteShell.vue';
+import CourierAdminDashboard from '../views/courier/CourierAdminDashboard.vue';
 
 const routes = [
   {
@@ -38,14 +41,27 @@ const routes = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    redirect: '/alona/logistics',
+    redirect: '/workspace',
     meta: { requiresAuth: true },
   },
+  { path: '/workspace', name: 'WorkspaceChooser', component: WorkspaceChooser, meta: { requiresAuth: true } },
   {
     path: '/alona/logistics',
-    name: 'AlonaLogisticsDashboard',
-    component: AlonaLogisticsDashboard,
+    component: WorkspaceRouteShell,
     meta: { requiresAuth: true, roles: ['admin', 'super_admin', 'logistics_admin', 'Admin', 'Super Admin', 'Logistics Admin'] },
+    children: [
+      { path: '', name: 'AlonaLogisticsDashboard', component: AlonaLogisticsDashboard },
+      { path: ':tab(overview|parcels|riders|zones|manifests)', name: 'AlonaLogisticsTab', component: AlonaLogisticsDashboard },
+    ],
+  },
+  {
+    path: '/courier-admin',
+    component: WorkspaceRouteShell,
+    meta: { requiresAuth: true, roles: ['courier_admin', 'admin', 'super_admin', 'Courier Admin', 'Admin', 'Super Admin'] },
+    children: [
+      { path: '', name: 'CourierAdminDashboard', component: CourierAdminDashboard },
+      { path: ':tab(overview|pickups|riders|exceptions|hubs)', name: 'CourierAdminTab', component: CourierAdminDashboard },
+    ],
   },
   {
     path: '/preview/admin',
@@ -97,6 +113,13 @@ router.beforeEach((to) => {
   }
   if (to.meta.requiresAuth && !localStorage.getItem('token')) return '/login';
   const roles = JSON.parse(localStorage.getItem('user_roles') || '[]');
+  if (to.path === '/dashboard') {
+    const canCourier = roles.some((role) => ['courier_admin', 'admin', 'super_admin'].includes(role));
+    const canLogistics = roles.some((role) => ['logistics_admin', 'admin', 'super_admin'].includes(role));
+    if (canCourier && canLogistics) return '/workspace';
+    if (canCourier) return '/courier-admin';
+    if (canLogistics) return '/alona/logistics';
+  }
   if (to.meta.roles && !to.meta.roles.some((role) => roles.includes(role))) return '/dashboard';
 });
 

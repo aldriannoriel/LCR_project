@@ -1,8 +1,0 @@
-<script setup>
-import { useRouter } from 'vue-router';
-import { ArrowRight, Bike, Boxes } from 'lucide-vue-next';
-const router = useRouter();
-</script>
-<template>
-  <main class="min-h-screen bg-[#f3f7f6] px-4 py-12 text-slate-900"><section class="mx-auto max-w-5xl"><p class="text-xs font-black uppercase tracking-[0.25em] text-teal-700">Alona platform</p><h1 class="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Choose your workspace</h1><p class="mt-4 max-w-xl text-slate-600">Access logistics operations or start your courier journey with Alona.</p><div class="mt-10 grid gap-5 md:grid-cols-2"><button class="group border border-slate-200 bg-white p-7 text-left shadow-sm transition hover:-translate-y-1 hover:border-teal-500" @click="router.push('/auth/logistics')"><Boxes class="h-9 w-9 text-teal-700" /><h2 class="mt-8 text-2xl font-black">Logistics</h2><p class="mt-2 text-sm text-slate-500">Admin operations, rider approval, territories, and dispatch.</p><span class="mt-8 inline-flex items-center gap-2 text-sm font-black text-teal-700">Enter logistics <ArrowRight class="h-4 w-4 transition group-hover:translate-x-1" /></span></button><button class="group border border-slate-200 bg-white p-7 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-500" @click="router.push('/courier')"><Bike class="h-9 w-9 text-blue-700" /><h2 class="mt-8 text-2xl font-black">Courier</h2><p class="mt-2 text-sm text-slate-500">Open the courier workspace for active delivery partners.</p><span class="mt-8 inline-flex items-center gap-2 text-sm font-black text-blue-700">Enter courier <ArrowRight class="h-4 w-4 transition group-hover:translate-x-1" /></span></button></div></section></main>
-</template>
